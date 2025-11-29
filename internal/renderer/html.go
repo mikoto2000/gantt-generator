@@ -1,63 +1,25 @@
 package renderer
 
 import (
-	"fmt"
-	"html"
-	"strings"
+	"bytes"
+	"html/template"
 	"time"
 
 	"ganttgen/internal/calendar"
 )
 
-func renderHTML(ctx renderContext) string {
-	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"ja\">\n<head>\n<meta charset=\"UTF-8\">\n")
-	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
-	b.WriteString("<title>Gantt Chart</title>\n<style>\n")
-	b.WriteString(baseCSS())
-	b.WriteString("\n</style>\n</head>\n<body>\n")
-	b.WriteString("<div class=\"page\">\n<h1>Gantt Chart</h1>\n")
-	fmt.Fprintf(&b, "<div class=\"gantt\" style=\"--day-count:%d;--today-index:%d;\">\n", ctx.DayCount, ctx.TodayIndex)
+func renderHTML(ctx renderContext) (string, error) {
+	tmpl := template.Must(template.New("page").Funcs(template.FuncMap{
+		"formatDate": formatDate,
+		"isWeekend":  func(t time.Time) bool { return !calendar.IsWorkday(t) },
+		"add1":       func(v int) int { return v + 1 },
+	}).Parse(pageTemplate))
 
-	b.WriteString("<div class=\"name-list\">")
-	b.WriteString("<div class=\"name header\">Task</div>")
-	for _, task := range ctx.Tasks {
-		b.WriteString("<div class=\"name\">")
-		b.WriteString(html.EscapeString(task.Name))
-		b.WriteString("</div>")
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, ctx); err != nil {
+		return "", err
 	}
-	b.WriteString("</div>") // name-list
-
-	b.WriteString("<div class=\"timeline-wrapper\">")
-	b.WriteString("<div class=\"grid-surface\">")
-	b.WriteString("<div class=\"today-line\"></div>")
-
-	b.WriteString("<div class=\"timeline-grid grid\">")
-	for _, day := range ctx.Days {
-		class := "day"
-		if !calendar.IsWorkday(day) {
-			class += " weekend"
-		}
-		fmt.Fprintf(&b, "<div class=\"%s\">%s</div>", class, day.Format("2006-01-02"))
-	}
-	b.WriteString("</div>") // timeline-grid
-
-	b.WriteString("<div class=\"bars\">")
-	for _, task := range ctx.Tasks {
-		b.WriteString("<div class=\"bar-row grid\">")
-		fmt.Fprintf(&b, "<div class=\"bar\" style=\"grid-column:%d / span %d;\" title=\"%s - %s\">%s</div>",
-			task.StartIndex+1, task.Span, formatDate(task.Start), formatDate(task.End), html.EscapeString(task.Name))
-		b.WriteString("</div>")
-	}
-	b.WriteString("</div>") // bars
-
-	b.WriteString("</div>") // grid-surface
-	b.WriteString("</div>") // timeline-wrapper
-
-	b.WriteString("</div>") // gantt
-	b.WriteString("</div>") // page
-	b.WriteString("\n</body>\n</html>")
-	return b.String()
+	return buf.String(), nil
 }
 
 func baseCSS() string {
@@ -218,3 +180,43 @@ body {
 func formatDate(t time.Time) string {
 	return t.Format("2006-01-02")
 }
+
+const pageTemplate = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gantt Chart</title>
+  <style>{{.CSS}}</style>
+</head>
+<body>
+  <div class="page">
+    <h1>Gantt Chart</h1>
+    <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};">
+      <div class="name-list">
+        <div class="name header">Task</div>
+        {{range .Tasks}}
+          <div class="name">{{.Name}}</div>
+        {{end}}
+      </div>
+      <div class="timeline-wrapper">
+        <div class="grid-surface">
+          <div class="today-line"></div>
+          <div class="timeline-grid grid">
+            {{range .Days}}
+              <div class="day{{if isWeekend .}} weekend{{end}}">{{formatDate .}}</div>
+            {{end}}
+          </div>
+          <div class="bars">
+            {{range .Tasks}}
+              <div class="bar-row grid">
+                <div class="bar" style="grid-column:{{add1 .StartIndex}} / span {{.Span}};" title="{{formatDate .Start}} - {{formatDate .End}}">{{.Name}}</div>
+              </div>
+            {{end}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`

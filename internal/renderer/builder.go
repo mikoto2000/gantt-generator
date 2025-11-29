@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"errors"
+	"html/template"
 	"sort"
 	"time"
 
@@ -64,8 +65,9 @@ func BuildHTML(tasks []model.Task) (string, error) {
 		Tasks:      rendered,
 		DayCount:   len(days),
 		TodayIndex: todayIndex,
+		CSS:        template.CSS(baseCSS()),
 	}
-	return renderHTML(ctx), nil
+	return renderHTML(ctx)
 }
 
 func daysRange(start, end time.Time) []time.Time {
@@ -97,4 +99,5 @@ type renderContext struct {
 	Tasks      []renderTask
 	DayCount   int
 	TodayIndex int
+	CSS        template.CSS
 }
