@@ -69,6 +69,10 @@ func baseCSS() string {
   --line: #e0e5ef;
   --today: #ff5a5f;
   --bg: #f5f7fb;
+  --timeline-header-height: 72px;
+  --row-height: 32px;
+  --row-gap: 8px;
+  --name-col-width: 200px;
 }
 
 * { box-sizing: border-box; }
@@ -94,21 +98,27 @@ body {
 .name-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--row-gap);
+  padding: 12px 0 16px 0;
+  min-width: var(--name-col-width);
 }
 
 .name {
-  min-width: 180px;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 0 12px;
   font-weight: 500;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  height: var(--row-height);
+  display: flex;
+  align-items: center;
 }
 
 .name.header {
   background: linear-gradient(120deg, #fff, #f0f4ff);
+  height: var(--timeline-header-height);
+  align-items: flex-end;
 }
 
 .timeline-wrapper {
@@ -155,8 +165,10 @@ body {
 
 .timeline-grid {
   gap: 2px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
+  padding-bottom: 0;
+  min-height: var(--timeline-header-height);
+  height: var(--timeline-header-height);
+  border-bottom: 0;
   position: relative;
   z-index: 1;
 }
@@ -167,7 +179,7 @@ body {
   line-height: 1.2;
   transform: rotate(-60deg);
   transform-origin: left bottom;
-  height: 56px;
+  height: var(--timeline-header-height);
   color: #1f2937;
 }
 
@@ -178,14 +190,14 @@ body {
 .bars {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 8px;
+  gap: var(--row-gap);
+  padding-top: var(--row-gap);
 }
 
 .bar-row {
   position: relative;
   align-items: center;
-  min-height: 32px;
+  height: var(--row-height);
   z-index: 1;
 }
 
