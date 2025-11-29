@@ -1,0 +1,5 @@
+name,start,end,duration,depends_on
+Planning,2024-06-03,,5d,
+Design,, ,4d,Planning
+Implementation,, ,8d,Design
+Testing,, ,5d,Implementation
