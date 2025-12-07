@@ -123,10 +123,10 @@ body {
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--day-count), var(--cell-width));
+  align-items: start;
 }
 
 .timeline-grid {
-  gap: 2px;
   padding-bottom: 0;
   min-height: var(--timeline-header-height);
   height: var(--timeline-header-height);
@@ -137,12 +137,17 @@ body {
 
 .day {
   font-size: 11px;
-  text-align: left;
   line-height: 1.2;
-  transform: rotate(-60deg);
-  transform-origin: left bottom;
   height: var(--timeline-header-height);
   color: #1f2937;
+  display: grid;
+  place-items: start center;
+}
+
+.day-label {
+  writing-mode: vertical-rl;
+  white-space: nowrap;
+  padding-top: 8px;
 }
 
 .day.weekend {
@@ -204,7 +209,7 @@ const pageTemplate = `<!DOCTYPE html>
           <div class="today-line"></div>
           <div class="timeline-grid grid">
             {{range .Days}}
-              <div class="day{{if isWeekend .}} weekend{{end}}">{{formatDate .}}</div>
+              <div class="day{{if isWeekend .}} weekend{{end}}"><span class="day-label">{{formatDate .}}</span></div>
             {{end}}
           </div>
           <div class="bars">
