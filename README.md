@@ -1,15 +1,15 @@
 # ganttgen
 
-CSV を唯一の入力として、純 CSS のガントチャート HTML を生成する Go 製 CLI です。稼働日は月〜金のみを考慮し、依存関係に応じてタスクを自動リスケします。
+CSV を唯一の入力として、純 CSS のガントチャート HTML を生成する Go 製 CLI です。稼働日は月〜金のみを考慮し、依存関係に応じてタスクを自動リスケします。任意で YAML 形式の祝日リストを渡すこともできます。
 
 ## 必要環境
 - Go 1.22 以上
 
 ## 使い方
 ```bash
-go run ./cmd/ganttgen [-o output.html] <input.csv>
+go run ./cmd/ganttgen [-o output.html] [--holidays holidays.yaml] <input.csv>
 ```
-デフォルト出力は `gantt.html` です。`-o`/`--output` で出力先を変更できます。
+デフォルト出力は `gantt.html` です。`-o`/`--output` で出力先を変更できます。`--holidays` で YYYY-MM-DD の配列を持つ YAML を渡すと、その日付を非稼働日として扱います。
 
 ## CSV 形式
 ヘッダー必須。列は順不同でも可。
@@ -35,10 +35,22 @@ go run ./cmd/ganttgen [-o output.html] <input.csv>
 go run ./cmd/ganttgen -o sample.html sample.csv
 ```
 
+祝日を考慮させる例:
+```bash
+go run ./cmd/ganttgen --holidays sample_holidays.yaml sample.csv
+```
+`sample_holidays.yaml` 例:
+```yaml
+# 配列だけでも OK
+holidays:
+  - 2024-09-16
+  - 2024-09-23
+```
+
 ## 開発メモ
 - レンダリングは HTML 内に `<style>` を埋め込み、CSS Grid で日付軸・バーを配置
 - 1 日 30px 幅。今日の縦線を常に表示
-- 稼働日判定は週末のみ考慮（祝日未対応）
+- 稼働日判定は週末に加えて、任意の祝日 YAML を考慮可能
 
 ## テスト
 ```bash

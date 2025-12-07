@@ -1,10 +1,41 @@
 package calendar
 
-import "time"
+import (
+	"sync"
+	"time"
+)
+
+var (
+	holidaysMu sync.RWMutex
+	holidays   = map[time.Time]struct{}{}
+)
+
+// SetHolidays registers dates that should be treated as non-workdays.
+// Passing nil clears any previously configured holidays.
+func SetHolidays(dates []time.Time) {
+	holidaysMu.Lock()
+	defer holidaysMu.Unlock()
+
+	holidays = make(map[time.Time]struct{}, len(dates))
+	for _, d := range dates {
+		holidays[DateOnly(d)] = struct{}{}
+	}
+}
+
+func isHoliday(t time.Time) bool {
+	holidaysMu.RLock()
+	defer holidaysMu.RUnlock()
+	_, ok := holidays[DateOnly(t)]
+	return ok
+}
 
 // IsWorkday reports whether the given date falls on a weekday (Mon-Fri).
 func IsWorkday(t time.Time) bool {
-	switch t.Weekday() {
+	day := DateOnly(t)
+	if isHoliday(day) {
+		return false
+	}
+	switch day.Weekday() {
 	case time.Saturday, time.Sunday:
 		return false
 	default:
