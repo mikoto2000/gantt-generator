@@ -24,6 +24,7 @@ go run ./cmd/ganttgen [-o output.html] [--holidays holidays.yaml] <input.csv>
 | actual_start | YYYY-MM-DD |  | 実績開始日（予定と同じ稼働日ルールで補正、予定の計算には影響なし） |
 | actual_end | YYYY-MM-DD |  | 実績終了日（actual_duration と併用不可、単独指定不可） |
 | actual_duration | Nd |  | 実績期間（稼働日ベース。actual_start とセットで使用） |
+| （日本語ヘッダ例）タスク名/開始/終了/期間/依存/実績開始/実績終了/実績期間 |  |  | サンプル CSV のように日本語ヘッダも使用できます（英語ヘッダと同義） |
 
 ### 主なバリデーション
 - end 単独指定不可 / end と duration 併用不可

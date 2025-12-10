@@ -9,7 +9,7 @@ import (
 )
 
 func TestReadValidCSV(t *testing.T) {
-	content := `name,start,end,duration,depends_on,actual_start,actual_end,actual_duration
+	content := `タスク名,開始,終了,期間,依存,実績開始,実績終了,実績期間
 Planning,2024-06-03,,5d,,2024-06-03,,5d
 Design,,,4d,Planning,2024-06-11,2024-06-17,
 `

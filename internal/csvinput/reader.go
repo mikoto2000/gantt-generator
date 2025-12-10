@@ -16,6 +16,16 @@ import (
 
 var (
 	requiredColumns = []string{"name", "start", "end", "duration", "depends_on"}
+	columnAliases   = map[string]string{
+		"タスク名":  "name",
+		"開始":    "start",
+		"終了":    "end",
+		"期間":    "duration",
+		"依存":    "depends_on",
+		"実績開始":  "actual_start",
+		"実績終了":  "actual_end",
+		"実績期間":  "actual_duration",
+	}
 	dateLayout      = "2006-01-02"
 )
 
@@ -76,6 +86,9 @@ func mapColumns(header []string) (map[string]int, error) {
 	mapped := make(map[string]int)
 	for idx, col := range header {
 		key := strings.ToLower(strings.TrimSpace(col))
+		if canonical, ok := columnAliases[key]; ok {
+			key = canonical
+		}
 		mapped[key] = idx
 	}
 	for _, col := range requiredColumns {
