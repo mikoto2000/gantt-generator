@@ -21,13 +21,22 @@ go run ./cmd/ganttgen [-o output.html] [--holidays holidays.yaml] <input.csv>
 | end | YYYY-MM-DD |  | 絶対終了日（duration と併用不可、単独指定不可） |
 | duration | Nd |  | 稼働日ベースの期間（例: `5d`） |
 | depends_on | string list |  | 依存タスク名（`,` または `;` 区切り） |
+| actual_start | YYYY-MM-DD |  | 実績開始日（予定と同じ稼働日ルールで補正、予定の計算には影響なし） |
+| actual_end | YYYY-MM-DD |  | 実績終了日（actual_duration と併用不可、単独指定不可） |
+| actual_duration | Nd |  | 実績期間（稼働日ベース。actual_start とセットで使用） |
 
 ### 主なバリデーション
 - end 単独指定不可 / end と duration 併用不可
+- actual_end 単独指定不可 / actual_end と actual_duration 併用不可 / actual_duration のみ指定不可
 - name 重複不可
 - 存在しないタスクへの depends_on 禁止
 - 循環依存禁止
 - 全フィールド空はエラー
+
+### 実績について
+- 実績列は任意。未指定の場合は予定のみ描画されます。
+- 実績の開始・終了・期間は予定と同じく稼働日（週末＋祝日を除外）前提で補正されます。
+- 実績はスケジューリングには使わず、ガント上で「予定（青）」と「実績（オレンジ）」を上下に並べて比較表示します。
 
 ## サンプル
 `sample.csv` を同梱しています。生成例:

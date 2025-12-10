@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"ganttgen/internal/calendar"
 	"ganttgen/internal/model"
 )
 
@@ -98,8 +99,11 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	endStr := get("end")
 	durationStr := get("duration")
 	dependsStr := get("depends_on")
+	actualStartStr := get("actual_start")
+	actualEndStr := get("actual_end")
+	actualDurationStr := get("actual_duration")
 
-	if name == "" && startStr == "" && endStr == "" && durationStr == "" && dependsStr == "" {
+	if name == "" && startStr == "" && endStr == "" && durationStr == "" && dependsStr == "" && actualStartStr == "" && actualEndStr == "" && actualDurationStr == "" {
 		return model.Task{}, fmt.Errorf("row %d: all fields are empty", row)
 	}
 	if name == "" {
@@ -149,6 +153,10 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	}
 	if task.Start == nil && task.End == nil && task.DurationDays == 0 {
 		return model.Task{}, fmt.Errorf("row %d: task lacks scheduling information", row)
+	}
+
+	if err := parseActual(&task, actualStartStr, actualEndStr, actualDurationStr, row); err != nil {
+		return model.Task{}, err
 	}
 
 	return task, nil
@@ -209,3 +217,65 @@ func validateDependencies(tasks []model.Task) error {
 	}
 	return nil
 }
+
+func parseActual(task *model.Task, startStr, endStr, durationStr string, row int) error {
+	if startStr == "" && endStr == "" && durationStr == "" {
+		return nil
+	}
+
+	if startStr != "" {
+		parsed, err := parseDate(startStr)
+		if err != nil {
+			return fmt.Errorf("row %d: invalid actual_start: %w", row, err)
+		}
+		task.ActualStart = ptrTime(calendar.NextWorkday(parsed))
+	}
+	if endStr != "" {
+		parsed, err := parseDate(endStr)
+		if err != nil {
+			return fmt.Errorf("row %d: invalid actual_end: %w", row, err)
+		}
+		task.ActualEnd = ptrTime(calendar.NextWorkday(parsed))
+	}
+	if durationStr != "" {
+		days, err := parseDuration(durationStr)
+		if err != nil {
+			return fmt.Errorf("row %d: invalid actual_duration: %w", row, err)
+		}
+		task.ActualDurationDays = days
+	}
+
+	if task.ActualEnd != nil && task.ActualDurationDays > 0 {
+		return fmt.Errorf("row %d: actual_end and actual_duration cannot both be set", row)
+	}
+	if task.ActualEnd != nil && task.ActualStart == nil && task.ActualDurationDays == 0 {
+		return fmt.Errorf("row %d: actual_end cannot be set without actual_start or actual_duration", row)
+	}
+	if task.ActualDurationDays > 0 && task.ActualStart == nil && task.ActualEnd == nil {
+		return fmt.Errorf("row %d: actual_duration requires actual_start", row)
+	}
+
+	switch {
+	case task.ActualStart != nil && task.ActualEnd != nil:
+		if task.ActualEnd.Before(*task.ActualStart) {
+			return fmt.Errorf("row %d: actual_end is before actual_start", row)
+		}
+		task.ComputedActualStart = ptrTime(calendar.DateOnly(*task.ActualStart))
+		task.ComputedActualEnd = ptrTime(calendar.DateOnly(*task.ActualEnd))
+	case task.ActualStart != nil && task.ActualDurationDays > 0:
+		start := calendar.DateOnly(*task.ActualStart)
+		end := calendar.AddWorkdays(start, task.ActualDurationDays-1)
+		task.ComputedActualStart = &start
+		task.ComputedActualEnd = &end
+	case task.ActualStart != nil:
+		start := calendar.DateOnly(*task.ActualStart)
+		task.ComputedActualStart = &start
+		task.ComputedActualEnd = &start
+	default:
+		return fmt.Errorf("row %d: actual schedule cannot be determined", row)
+	}
+
+	return nil
+}
+
+func ptrTime(t time.Time) *time.Time { return &t }

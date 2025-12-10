@@ -35,6 +35,16 @@ func BuildHTML(tasks []model.Task) (string, error) {
 			maxEnd = t.ComputedEnd
 		}
 	}
+	for _, t := range sorted {
+		if t.HasActual() {
+			if t.ComputedActualStart.Before(minStart) {
+				minStart = *t.ComputedActualStart
+			}
+			if t.ComputedActualEnd.After(maxEnd) {
+				maxEnd = *t.ComputedActualEnd
+			}
+		}
+	}
 
 	today := calendar.DateOnly(time.Now())
 	if today.Before(minStart) {
@@ -48,16 +58,29 @@ func BuildHTML(tasks []model.Task) (string, error) {
 	todayIndex := daysBetween(minStart, today)
 
 	var rendered []renderTask
+	var hasActual bool
 	for _, t := range sorted {
 		startIdx := daysBetween(minStart, t.ComputedStart)
 		span := daysBetween(t.ComputedStart, t.ComputedEnd) + 1
-		rendered = append(rendered, renderTask{
+		rt := renderTask{
 			Name:       t.Name,
 			StartIndex: startIdx,
 			Span:       span,
 			Start:      calendar.DateOnly(t.ComputedStart),
 			End:        calendar.DateOnly(t.ComputedEnd),
-		})
+		}
+		if t.HasActual() {
+			hasActual = true
+			actualStartIdx := daysBetween(minStart, *t.ComputedActualStart)
+			actualSpan := daysBetween(*t.ComputedActualStart, *t.ComputedActualEnd) + 1
+			rt.Actual = &renderActual{
+				StartIndex: actualStartIdx,
+				Span:       actualSpan,
+				Start:      calendar.DateOnly(*t.ComputedActualStart),
+				End:        calendar.DateOnly(*t.ComputedActualEnd),
+			}
+		}
+		rendered = append(rendered, rt)
 	}
 
 	ctx := renderContext{
@@ -65,6 +88,7 @@ func BuildHTML(tasks []model.Task) (string, error) {
 		Tasks:      rendered,
 		DayCount:   len(days),
 		TodayIndex: todayIndex,
+		HasActual:  hasActual,
 		CSS:        template.CSS(baseCSS()),
 	}
 	return renderHTML(ctx)
@@ -92,6 +116,14 @@ type renderTask struct {
 	Span       int
 	Start      time.Time
 	End        time.Time
+	Actual     *renderActual
+}
+
+type renderActual struct {
+	StartIndex int
+	Span       int
+	Start      time.Time
+	End        time.Time
 }
 
 type renderContext struct {
@@ -99,5 +131,6 @@ type renderContext struct {
 	Tasks      []renderTask
 	DayCount   int
 	TodayIndex int
+	HasActual  bool
 	CSS        template.CSS
 }

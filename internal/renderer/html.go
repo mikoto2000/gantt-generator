@@ -28,12 +28,15 @@ func baseCSS() string {
   --cell-width: 30px;
   --accent: #4c6fff;
   --accent-2: #67b4ff;
+  --actual: #f97316;
+  --actual-2: #fdba74;
   --line: #e0e5ef;
   --today: #ff5a5f;
   --bg: #f5f7fb;
   --timeline-header-height: 72px;
-  --row-height: 32px;
-  --row-gap: 8px;
+  --bar-height: 20px;
+  --row-height: 56px;
+  --row-gap: 10px;
   --name-col-width: 200px;
 }
 
@@ -50,6 +53,31 @@ body {
   font-weight: 700;
   letter-spacing: 0.5px;
 }
+
+.legend {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0 4px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.legend-swatch.plan { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.legend-swatch.actual { background: linear-gradient(135deg, var(--actual), var(--actual-2)); }
 
 .gantt {
   display: flex;
@@ -163,13 +191,16 @@ body {
 
 .bar-row {
   position: relative;
-  align-items: center;
-  height: var(--row-height);
+  align-items: start;
+  min-height: var(--row-height);
+  grid-auto-rows: max-content;
+  row-gap: 6px;
+  padding: 2px 0;
   z-index: 1;
 }
 
 .bar {
-  height: 24px;
+  height: var(--bar-height);
   border-radius: 8px;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #fff;
@@ -178,6 +209,12 @@ body {
   padding: 0 10px;
   font-size: 13px;
   box-shadow: 0 6px 14px rgba(76, 111, 255, 0.25);
+}
+
+.bar.actual {
+  background: linear-gradient(135deg, var(--actual), var(--actual-2));
+  color: #0f172a;
+  box-shadow: 0 5px 12px rgba(249, 115, 22, 0.28);
 }
 `
 }
@@ -197,6 +234,10 @@ const pageTemplate = `<!DOCTYPE html>
 <body>
   <div class="page">
     <h1>Gantt Chart</h1>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch plan"></span><span>予定</span></div>
+      {{if .HasActual}}<div class="legend-item"><span class="legend-swatch actual"></span><span>実績</span></div>{{end}}
+    </div>
     <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};">
       <div class="name-list">
         <div class="name header">Task</div>
@@ -215,7 +256,10 @@ const pageTemplate = `<!DOCTYPE html>
           <div class="bars">
             {{range .Tasks}}
               <div class="bar-row grid">
-                <div class="bar" style="grid-column:{{add1 .StartIndex}} / span {{.Span}};" title="{{formatDate .Start}} - {{formatDate .End}}">{{.Name}}</div>
+                <div class="bar plan" style="grid-column:{{add1 .StartIndex}} / span {{.Span}};" title="予定: {{formatDate .Start}} - {{formatDate .End}}">予定</div>
+                {{if .Actual}}
+                  <div class="bar actual" style="grid-column:{{add1 .Actual.StartIndex}} / span {{.Actual.Span}};" title="実績: {{formatDate .Actual.Start}} - {{formatDate .Actual.End}}">実績</div>
+                {{end}}
               </div>
             {{end}}
           </div>

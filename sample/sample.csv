@@ -1,5 +1,5 @@
-name,start,end,duration,depends_on
-Planning,2024-06-03,,6d,
-Design,, ,4d,Planning
-Implementation,, ,8d,Design
-Testing,, ,5d,Implementation
+name,start,end,duration,depends_on,actual_start,actual_end,actual_duration
+Planning,2024-06-03,,6d,,2024-06-03,,6d
+Design,,,4d,Planning,2024-06-13,2024-06-19,
+Implementation,,,8d,Design,2024-06-20,,9d
+Testing,,,5d,Implementation,2024-07-04,,4d

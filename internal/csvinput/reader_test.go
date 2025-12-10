@@ -9,9 +9,9 @@ import (
 )
 
 func TestReadValidCSV(t *testing.T) {
-	content := `name,start,end,duration,depends_on
-Planning,2024-06-03,,5d,
-Design,,,4d,Planning
+	content := `name,start,end,duration,depends_on,actual_start,actual_end,actual_duration
+Planning,2024-06-03,,5d,,2024-06-03,,5d
+Design,,,4d,Planning,2024-06-11,2024-06-17,
 `
 	dir := t.TempDir()
 	path := filepath.Join(dir, "input.csv")
@@ -37,6 +37,12 @@ Design,,,4d,Planning
 	}
 	if got := tasks[1].DependsOn; len(got) != 1 || got[0] != "Planning" {
 		t.Fatalf("unexpected depends_on: %#v", got)
+	}
+	if tasks[0].ComputedActualEnd == nil || !tasks[0].ComputedActualEnd.Equal(time.Date(2024, 6, 7, 0, 0, 0, 0, time.Local)) {
+		t.Fatalf("unexpected actual end for Planning: %v", tasks[0].ComputedActualEnd)
+	}
+	if tasks[1].ComputedActualStart == nil || !tasks[1].ComputedActualStart.Equal(time.Date(2024, 6, 11, 0, 0, 0, 0, time.Local)) {
+		t.Fatalf("unexpected actual start for Design: %v", tasks[1].ComputedActualStart)
 	}
 }
 
