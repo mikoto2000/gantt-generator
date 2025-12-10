@@ -1,5 +1,8 @@
 module ganttgen
 
-go 1.22
+go 1.24.0
 
-require gopkg.in/yaml.v3 v3.0.1 // indirect
+require (
+	golang.org/x/text v0.32.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)

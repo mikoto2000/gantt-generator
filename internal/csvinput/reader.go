@@ -1,6 +1,7 @@
 package csvinput
 
 import (
+	"bytes"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -9,6 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
+
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 
 	"ganttgen/internal/calendar"
 	"ganttgen/internal/model"
@@ -26,18 +31,27 @@ var (
 		"実績終了":  "actual_end",
 		"実績期間":  "actual_duration",
 	}
-	dateLayout      = "2006-01-02"
+	dateLayouts = []string{
+		"2006-01-02", // zero-padded dash
+		"2006-1-2",   // non-padded dash
+		"2006/01/02", // zero-padded slash
+		"2006/1/2",   // non-padded slash
+	}
 )
 
 // Read parses the CSV file and returns tasks with their raw attributes.
 func Read(path string) ([]model.Task, error) {
-	file, err := os.Open(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("open csv: %w", err)
 	}
-	defer file.Close()
 
-	reader := csv.NewReader(file)
+	decoded, err := decodeCSVBytes(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	reader := csv.NewReader(bytes.NewReader(decoded))
 	header, err := reader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("read header: %w", err)
@@ -193,11 +207,12 @@ func parseDepends(raw string) []string {
 }
 
 func parseDate(raw string) (time.Time, error) {
-	parsed, err := time.Parse(dateLayout, raw)
-	if err != nil {
-		return time.Time{}, err
+	for _, layout := range dateLayouts {
+		if parsed, err := time.Parse(layout, raw); err == nil {
+			return time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.Local), nil
+		}
 	}
-	return time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.Local), nil
+	return time.Time{}, fmt.Errorf("invalid date %q (expected YYYY-MM-DD or YYYY/MM/DD)", raw)
 }
 
 func parseDuration(raw string) (int, error) {
@@ -292,3 +307,43 @@ func parseActual(task *model.Task, startStr, endStr, durationStr string, row int
 }
 
 func ptrTime(t time.Time) *time.Time { return &t }
+
+type encodingKind int
+
+const (
+	encUTF8 encodingKind = iota
+	encShiftJIS
+)
+
+// decodeCSVBytes inspects the header to decide UTF-8 or Shift_JIS and returns UTF-8 bytes.
+func decodeCSVBytes(data []byte) ([]byte, error) {
+	enc := detectEncoding(data)
+	switch enc {
+	case encUTF8:
+		if !utf8.Valid(data) {
+			return nil, fmt.Errorf("csv is not valid utf-8")
+		}
+		return data, nil
+	case encShiftJIS:
+		reader := transform.NewReader(bytes.NewReader(data), japanese.ShiftJIS.NewDecoder())
+		decoded, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, fmt.Errorf("decode Shift_JIS: %w", err)
+		}
+		return decoded, nil
+	default:
+		return nil, fmt.Errorf("unknown encoding")
+	}
+}
+
+// detectEncoding uses the first line (header) as a sample and falls back to Shift_JIS if not valid UTF-8.
+func detectEncoding(data []byte) encodingKind {
+	sample := data
+	if idx := bytes.IndexByte(data, '\n'); idx >= 0 {
+		sample = data[:idx]
+	}
+	if utf8.Valid(sample) {
+		return encUTF8
+	}
+	return encShiftJIS
+}

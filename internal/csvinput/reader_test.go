@@ -6,6 +6,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 )
 
 func TestReadValidCSV(t *testing.T) {
@@ -60,5 +63,77 @@ A,2024-06-04,,1d,
 	_, err := Read(path)
 	if err == nil || !strings.Contains(err.Error(), "duplicate task name") {
 		t.Fatalf("expected duplicate name error, got %v", err)
+	}
+}
+
+func TestReadDetectsShiftJIS(t *testing.T) {
+	content := "タスク名,開始,終了,期間,依存\n計画,2024-06-03,,2d,\n"
+	encoded, err := transform.String(japanese.ShiftJIS.NewEncoder(), content)
+	if err != nil {
+		t.Fatalf("encode to Shift_JIS: %v", err)
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sjis.csv")
+	if err := os.WriteFile(path, []byte(encoded), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	tasks, err := Read(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(tasks))
+	}
+	if tasks[0].Name != "計画" {
+		t.Fatalf("decoded task name mismatch: %s", tasks[0].Name)
+	}
+}
+
+func TestReadAcceptsSlashSeparatedDates(t *testing.T) {
+	content := `name,start,end,duration,depends_on
+SlashDate,2024/06/03,,3d,
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "slash.csv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	tasks, err := Read(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(tasks))
+	}
+	if tasks[0].Start == nil || tasks[0].Start.Format("2006-01-02") != "2024-06-03" {
+		t.Fatalf("slash date not parsed correctly: %+v", tasks[0].Start)
+	}
+}
+
+func TestReadAcceptsNonPaddedDates(t *testing.T) {
+	content := `name,start,end,duration,depends_on
+NonPadded,2024-6-3,,2d,
+SlashNonPadded,2024/6/3,,1d,
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "nonpadded.csv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	tasks, err := Read(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tasks) != 2 {
+		t.Fatalf("expected 2 tasks, got %d", len(tasks))
+	}
+	for _, tc := range tasks {
+		if tc.Start == nil || tc.Start.Format("2006-01-02") != "2024-06-03" {
+			t.Fatalf("non-padded date not normalized: %+v", tc.Start)
+		}
 	}
 }
