@@ -11,7 +11,8 @@ import (
 )
 
 // BuildHTML prepares render data and returns the final HTML string.
-func BuildHTML(tasks []model.Task) (string, error) {
+// liveReloadURL, when non-empty, injects a small client to auto-refresh the page.
+func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 	if len(tasks) == 0 {
 		return "", errors.New("no tasks to render")
 	}
@@ -84,12 +85,13 @@ func BuildHTML(tasks []model.Task) (string, error) {
 	}
 
 	ctx := renderContext{
-		Days:       days,
-		Tasks:      rendered,
-		DayCount:   len(days),
-		TodayIndex: todayIndex,
-		HasActual:  hasActual,
-		CSS:        template.CSS(baseCSS()),
+		Days:          days,
+		Tasks:         rendered,
+		DayCount:      len(days),
+		TodayIndex:    todayIndex,
+		HasActual:     hasActual,
+		LiveReloadURL: liveReloadURL,
+		CSS:           template.CSS(baseCSS()),
 	}
 	return renderHTML(ctx)
 }
@@ -132,5 +134,6 @@ type renderContext struct {
 	DayCount   int
 	TodayIndex int
 	HasActual  bool
+	LiveReloadURL string
 	CSS        template.CSS
 }

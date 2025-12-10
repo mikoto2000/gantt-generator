@@ -10,9 +10,12 @@ CSV を唯一の入力として、純 CSS のガントチャート HTML を生�
 go run ./cmd/ganttgen [-o output.html] [--holidays holidays.yaml] <input.csv>
 # 変更監視しながら生成
 go run ./cmd/ganttgen --watch [-o output.html] [--holidays holidays.yaml] <input.csv>
+# livereload 付きで監視生成（HTML を開いたまま自動更新）
+go run ./cmd/ganttgen --livereload [-o output.html] [--holidays holidays.yaml] <input.csv>
 ```
 デフォルト出力は `gantt.html` です。`-o`/`--output` で出力先を変更できます。`--holidays` で YYYY-MM-DD の配列を持つ YAML を渡すと、その日付を非稼働日として扱います。
 `--watch` を付けると CSV の更新を1秒間隔で検知し、都度再生成します（Ctrl+C で終了）。
+`--livereload` を付けるとローカルに SSE ベースのライブリロードサーバを立ち上げ、生成 HTML にクライアントスクリプトを埋め込みます。CSV を保存するたびに生成とブラウザ更新まで自動で行います。ポートは `--livereload-port`（デフォルト 35729）で変更できます。
 
 ## CSV 形式
 ヘッダー必須。列は順不同でも可。日付は `YYYY-MM-DD` / `YYYY/MM/DD` のほか、月日が1桁の場合のゼロ省略（例: `2024-6-3`, `2024/6/3`）も受け付けます。文字コードは UTF-8 / Shift_JIS をヘッダ行から自動判定します。

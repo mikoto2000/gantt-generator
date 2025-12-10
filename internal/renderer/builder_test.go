@@ -26,7 +26,7 @@ func TestBuildHTMLRendersTasks(t *testing.T) {
 		},
 	}
 
-	html, err := BuildHTML(tasks)
+	html, err := BuildHTML(tasks, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -44,6 +44,20 @@ func TestBuildHTMLRendersTasks(t *testing.T) {
 	}
 	if !strings.Contains(html, "legend-swatch actual") {
 		t.Fatalf("actual legend not rendered")
+	}
+}
+
+func TestBuildHTMLIncludesLiveReload(t *testing.T) {
+	tasks := []model.Task{
+		{Name: "A", ComputedStart: day(2024, time.June, 3), ComputedEnd: day(2024, time.June, 3)},
+	}
+	url := "http://localhost:35729/livereload"
+	html, err := BuildHTML(tasks, url)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(html, "EventSource('"+url+"')") {
+		t.Fatalf("livereload script missing")
 	}
 }
 

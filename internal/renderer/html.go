@@ -267,5 +267,19 @@ const pageTemplate = `<!DOCTYPE html>
       </div>
     </div>
   </div>
+  {{if .LiveReloadURL}}
+  <script>
+  (function() {
+    try {
+      var es = new EventSource('{{.LiveReloadURL}}');
+      es.onmessage = function(ev) {
+        if (ev.data === 'reload') { location.reload(); }
+      };
+    } catch (e) {
+      console.warn('LiveReload unavailable', e);
+    }
+  })();
+  </script>
+  {{end}}
 </body>
 </html>`
