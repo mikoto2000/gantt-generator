@@ -77,6 +77,11 @@ func Read(path string) ([]model.Task, error) {
 			return nil, fmt.Errorf("row %d: %w", row, err)
 		}
 
+		if recordAllEmpty(record) {
+			row++
+			continue
+		}
+
 		task, err := parseRecord(record, colIndex, row)
 		if err != nil {
 			return nil, err
@@ -130,9 +135,6 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	actualEndStr := get("actual_end")
 	actualDurationStr := get("actual_duration")
 
-	if name == "" && startStr == "" && endStr == "" && durationStr == "" && dependsStr == "" && actualStartStr == "" && actualEndStr == "" && actualDurationStr == "" {
-		return model.Task{}, fmt.Errorf("row %d: all fields are empty", row)
-	}
 	if name == "" {
 		return model.Task{}, fmt.Errorf("row %d: name is required", row)
 	}
@@ -307,6 +309,15 @@ func parseActual(task *model.Task, startStr, endStr, durationStr string, row int
 }
 
 func ptrTime(t time.Time) *time.Time { return &t }
+
+func recordAllEmpty(record []string) bool {
+	for _, v := range record {
+		if strings.TrimSpace(v) != "" {
+			return false
+		}
+	}
+	return true
+}
 
 type encodingKind int
 
