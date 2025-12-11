@@ -3,7 +3,6 @@ package renderer
 import (
 	"errors"
 	"html/template"
-	"sort"
 	"time"
 
 	"ganttgen/internal/calendar"
@@ -17,18 +16,8 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 		return "", errors.New("no tasks to render")
 	}
 
-	// Ensure deterministic order: start date then name.
-	sorted := make([]model.Task, len(tasks))
-	copy(sorted, tasks)
-	sort.Slice(sorted, func(i, j int) bool {
-		if sorted[i].ComputedStart.Equal(sorted[j].ComputedStart) {
-			return sorted[i].Name < sorted[j].Name
-		}
-		return sorted[i].ComputedStart.Before(sorted[j].ComputedStart)
-	})
-
-	minStart, maxEnd := sorted[0].ComputedStart, sorted[0].ComputedEnd
-	for _, t := range sorted[1:] {
+	minStart, maxEnd := tasks[0].ComputedStart, tasks[0].ComputedEnd
+	for _, t := range tasks[1:] {
 		if t.ComputedStart.Before(minStart) {
 			minStart = t.ComputedStart
 		}
@@ -36,7 +25,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 			maxEnd = t.ComputedEnd
 		}
 	}
-	for _, t := range sorted {
+	for _, t := range tasks {
 		if t.HasActual() {
 			if t.ComputedActualStart.Before(minStart) {
 				minStart = *t.ComputedActualStart
@@ -60,7 +49,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 
 	var rendered []renderTask
 	var hasActual bool
-	for _, t := range sorted {
+	for _, t := range tasks {
 		startIdx := daysBetween(minStart, t.ComputedStart)
 		span := daysBetween(t.ComputedStart, t.ComputedEnd) + 1
 		rt := renderTask{

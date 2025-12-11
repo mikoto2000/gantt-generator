@@ -40,7 +40,7 @@ func Schedule(tasks []model.Task) ([]model.Task, error) {
 	sort.Strings(queue) // deterministic start order
 
 	scheduled := make(map[string]model.Task, len(tasks))
-	var ordered []model.Task
+	scheduledCount := 0
 
 	for len(queue) > 0 {
 		name := queue[0]
@@ -55,7 +55,7 @@ func Schedule(tasks []model.Task) ([]model.Task, error) {
 			return nil, err
 		}
 		scheduled[name] = scheduledTask
-		ordered = append(ordered, scheduledTask)
+		scheduledCount++
 
 		for _, successor := range graph[name] {
 			indegree[successor]--
@@ -65,8 +65,18 @@ func Schedule(tasks []model.Task) ([]model.Task, error) {
 		}
 	}
 
-	if len(ordered) != len(tasks) {
+	if scheduledCount != len(tasks) {
 		return nil, errors.New("cyclic dependency detected")
+	}
+
+	// Return tasks in original CSV-defined order.
+	ordered := make([]model.Task, 0, len(tasks))
+	for _, t := range tasks {
+		scheduledTask, ok := scheduled[t.Name]
+		if !ok {
+			return nil, fmt.Errorf("task %q could not be scheduled", t.Name)
+		}
+		ordered = append(ordered, scheduledTask)
 	}
 	return ordered, nil
 }
