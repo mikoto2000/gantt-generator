@@ -270,10 +270,15 @@ body {
   font-size: 13px;
   color: #111827;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  max-height: var(--row-height);
   min-height: var(--row-height);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   white-space: pre-wrap;
+  overflow: auto;
+  cursor: pointer;
+  transition: max-height 0.2s ease;
 }
 
 .note.header {
@@ -288,6 +293,7 @@ body {
   background: transparent;
   border: none;
   box-shadow: none;
+  cursor: default;
 }
 
 .notes-hidden .notes-list {
@@ -295,6 +301,11 @@ body {
 }
 .notes-hidden .gantt {
   grid-template-columns: var(--name-col-width) 1fr;
+}
+
+.row-name, .row-bar {
+  min-height: var(--row-height);
+  transition: min-height 0.2s ease;
 }
 `
 }
@@ -324,11 +335,11 @@ const pageTemplate = `<!DOCTYPE html>
     <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};">
       <div class="name-list">
         <div class="name header">Task</div>
-        {{range .Rows}}
-          {{if .Heading}}
-            <div class="heading">{{.Heading}}</div>
-          {{else if .Task}}
-            <div class="name">{{.Task.Name}}</div>
+        {{range $i, $row := .Rows}}
+          {{if $row.Heading}}
+            <div class="heading row-name" data-row="{{$i}}">{{$row.Heading}}</div>
+          {{else if $row.Task}}
+            <div class="name row-name" data-row="{{$i}}">{{$row.Task.Name}}</div>
           {{end}}
         {{end}}
       </div>
@@ -341,14 +352,14 @@ const pageTemplate = `<!DOCTYPE html>
             {{end}}
           </div>
           <div class="bars">
-            {{range .Rows}}
-              {{if .Heading}}
-                <div class="heading-spacer"></div>
-              {{else if .Task}}
-                <div class="bar-row grid">
-                  <div class="bar plan" style="grid-column:{{add1 .Task.StartIndex}} / span {{.Task.Span}};" title="予定: {{formatDate .Task.Start}} - {{formatDate .Task.End}}">予定</div>
-                  {{if .Task.Actual}}
-                    <div class="bar actual" style="grid-column:{{add1 .Task.Actual.StartIndex}} / span {{.Task.Actual.Span}};" title="実績: {{formatDate .Task.Actual.Start}} - {{formatDate .Task.Actual.End}}">実績</div>
+            {{range $i, $row := .Rows}}
+              {{if $row.Heading}}
+                <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
+              {{else if $row.Task}}
+                <div class="bar-row grid row-bar" data-row="{{$i}}">
+                  <div class="bar plan" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}">予定</div>
+                  {{if $row.Task.Actual}}
+                    <div class="bar actual" style="grid-column:{{add1 $row.Task.Actual.StartIndex}} / span {{$row.Task.Actual.Span}};" title="実績: {{formatDate $row.Task.Actual.Start}} - {{formatDate $row.Task.Actual.End}}">実績</div>
                   {{end}}
                 </div>
               {{end}}
@@ -359,14 +370,14 @@ const pageTemplate = `<!DOCTYPE html>
       {{if .HasNotes}}
       <div class="notes-list">
         <div class="note header">備考</div>
-        {{range .Rows}}
-          {{if .Heading}}
-            <div class="note empty"></div>
-          {{else if .Task}}
-            {{if .Task.Notes}}
-              <div class="note">{{.Task.Notes}}</div>
+        {{range $i, $row := .Rows}}
+          {{if $row.Heading}}
+            <div class="note empty row-note" data-row="{{$i}}"></div>
+          {{else if $row.Task}}
+            {{if $row.Task.Notes}}
+              <div class="note row-note" data-row="{{$i}}">{{$row.Task.Notes}}</div>
             {{else}}
-              <div class="note empty"></div>
+              <div class="note empty row-note" data-row="{{$i}}"></div>
             {{end}}
           {{end}}
         {{end}}
@@ -406,6 +417,45 @@ const pageTemplate = `<!DOCTYPE html>
         header.addEventListener('click', toggle);
         header.title = 'クリックで備考の表示/非表示を切替';
       }
+
+      var rowHeight = getComputedStyle(document.documentElement).getPropertyValue('--row-height').trim();
+      var rowHeightValue = parseFloat(rowHeight);
+      var notes = document.querySelectorAll('.row-note[data-row]');
+      notes.forEach(function(note) {
+        if (note.classList.contains('empty')) return;
+        var rowId = note.getAttribute('data-row');
+        var name = document.querySelector('.row-name[data-row="' + rowId + '"]');
+        var bar = document.querySelector('.row-bar[data-row="' + rowId + '"]');
+        var expanded = false;
+
+        var applyHeight = function(h) {
+          var hp = h + 'px';
+          note.style.maxHeight = hp;
+          if (name) name.style.minHeight = hp;
+          if (bar) bar.style.minHeight = hp;
+        };
+
+        var collapse = function() {
+          expanded = false;
+          note.classList.remove('expanded');
+          applyHeight(rowHeightValue);
+        };
+        var expand = function() {
+          expanded = true;
+          note.classList.add('expanded');
+          var h = Math.max(note.scrollHeight, rowHeightValue);
+          applyHeight(h);
+        };
+
+        collapse();
+        note.addEventListener('click', function() {
+          if (expanded) {
+            collapse();
+          } else {
+            expand();
+          }
+        });
+      });
     })();
   </script>
   {{end}}
