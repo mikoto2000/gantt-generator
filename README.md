@@ -16,7 +16,11 @@ CSV から、ガントチャートの単一 HTML を生成する Go 製 CLI で�
 
 ## Getting Started
 
-TODO...
+以下コマンドでインストールするか、リリースページよりバイナリをダウンロードしてください。
+
+```sh
+go install github.com/mikoto2000/ganttgen@latest
+```
 
 
 ## Usage:
@@ -65,6 +69,8 @@ ganttgen --livereload [-o output.html] [--holidays holidays.yaml] <input.csv>
 
 ヘッダー必須。列は順不同でも可。日付は `YYYY-MM-DD` / `YYYY/MM/DD` のほか、月日が1桁の場合のゼロ省略（例: `2024-6-3`, `2024/6/3`）も受け付けます。
 
+先頭列が `#` で始まる行はセクション区切りとして扱います。セクション名はガントチャート上に表示されます。
+
 文字コードは UTF-8 / Shift_JIS をヘッダ行から自動判定します。
 
 | 列英名(日本語名) | 型 | 必須 | 説明 |
@@ -80,6 +86,19 @@ ganttgen --livereload [-o output.html] [--holidays holidays.yaml] <input.csv>
 | notes(備考) | string |  | タスク備考（ガントチャート上に表示） |
 
 サンプル CSV のように日本語ヘッダも使用できます（英語ヘッダと同義）。
+
+CSV サンプル:
+
+```csv
+タスク名,開始,終了,期間,依存,実績開始,実績終了,実績期間,備考
+#要件定義,,,,,,,,
+タスク1,2025/12/1,,2d,,2025/12/11,2025/12/15,,備考1
+#設計,,,,,,,,
+タスク2,,,3d,タスク1,,,,備考2
+```
+
+`sample/sample.csv` を参照表計算アプリで開くのを推奨。
+
 
 ### 祝日 yaml 形式
 
