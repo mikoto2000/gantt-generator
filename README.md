@@ -2,6 +2,8 @@
 
 CSV から、ガントチャートの単一 HTML を生成する Go 製 CLI です。
 
+<img width="1141" height="780" alt="image" src="https://github.com/user-attachments/assets/341555c6-6938-4590-a86b-8e34504ce1c7" />
+
 
 ## Features:
 
