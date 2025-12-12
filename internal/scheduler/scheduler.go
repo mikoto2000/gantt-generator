@@ -29,7 +29,7 @@ func Schedule(tasks []model.Task) ([]model.Task, error) {
 	graph := make(map[string][]string, len(tasks))
 	schedulableCount := 0
 	for _, t := range tasks {
-		if t.IsHeading {
+		if t.IsHeading || t.DisplayOnly {
 			continue
 		}
 		schedulableCount++
@@ -80,7 +80,7 @@ func Schedule(tasks []model.Task) ([]model.Task, error) {
 	// Return tasks in original CSV-defined order.
 	ordered := make([]model.Task, 0, len(tasks))
 	for _, t := range tasks {
-		if t.IsHeading {
+		if t.IsHeading || t.DisplayOnly {
 			ordered = append(ordered, t)
 			continue
 		}

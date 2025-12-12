@@ -149,6 +149,11 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	actualDurationStr := get("actual_duration")
 	notesStr := get("notes")
 
+	// Name only (no scheduling/depends/actual/notes) -> display-only row.
+	if name != "" && startStr == "" && endStr == "" && durationStr == "" && dependsStr == "" && actualStartStr == "" && actualEndStr == "" && actualDurationStr == "" && notesStr == "" {
+		return model.Task{Name: name, DisplayOnly: true}, nil
+	}
+
 	if name == "" {
 		return model.Task{}, fmt.Errorf("row %d: name is required", row)
 	}

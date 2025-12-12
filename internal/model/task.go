@@ -6,6 +6,7 @@ import "time"
 type Task struct {
 	Name                string
 	IsHeading           bool
+	DisplayOnly         bool
 	Notes               string
 	Start               *time.Time
 	End                 *time.Time

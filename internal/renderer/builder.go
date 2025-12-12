@@ -22,7 +22,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 		setRange bool
 	)
 	for _, t := range tasks {
-		if t.IsHeading {
+		if t.IsHeading || t.DisplayOnly {
 			continue
 		}
 		if !setRange {
@@ -41,7 +41,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 		return "", errors.New("no schedulable tasks to render")
 	}
 	for _, t := range tasks {
-		if t.IsHeading {
+		if t.IsHeading || t.DisplayOnly {
 			continue
 		}
 		if t.HasActual() {
@@ -71,6 +71,13 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 	for _, t := range tasks {
 		if t.IsHeading {
 			rows = append(rows, renderRow{Heading: t.Name})
+			continue
+		}
+		if t.DisplayOnly {
+			if t.Notes != "" {
+				hasNotes = true
+			}
+			rows = append(rows, renderRow{DisplayOnly: t.Name, DisplayOnlyNotes: t.Notes})
 			continue
 		}
 		startIdx := daysBetween(minStart, t.ComputedStart)
@@ -140,8 +147,10 @@ type renderTask struct {
 }
 
 type renderRow struct {
-	Heading string
-	Task    *renderTask
+	Heading          string
+	DisplayOnly      string
+	DisplayOnlyNotes string
+	Task             *renderTask
 }
 
 type renderActual struct {

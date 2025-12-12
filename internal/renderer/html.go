@@ -338,6 +338,8 @@ const pageTemplate = `<!DOCTYPE html>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
             <div class="heading row-name" data-row="{{$i}}">{{$row.Heading}}</div>
+          {{else if $row.DisplayOnly}}
+            <div class="name row-name" data-row="{{$i}}">{{$row.DisplayOnly}}</div>
           {{else if $row.Task}}
             <div class="name row-name" data-row="{{$i}}">{{$row.Task.Name}}</div>
           {{end}}
@@ -354,6 +356,8 @@ const pageTemplate = `<!DOCTYPE html>
           <div class="bars">
             {{range $i, $row := .Rows}}
               {{if $row.Heading}}
+                <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
+              {{else if $row.DisplayOnly}}
                 <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
               {{else if $row.Task}}
                 <div class="bar-row grid row-bar" data-row="{{$i}}">
@@ -373,6 +377,12 @@ const pageTemplate = `<!DOCTYPE html>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
             <div class="note empty row-note" data-row="{{$i}}"></div>
+          {{else if $row.DisplayOnly}}
+            {{if $row.DisplayOnlyNotes}}
+              <div class="note row-note" data-row="{{$i}}">{{$row.DisplayOnlyNotes}}</div>
+            {{else}}
+              <div class="note empty row-note" data-row="{{$i}}"></div>
+            {{end}}
           {{else if $row.Task}}
             {{if $row.Task.Notes}}
               <div class="note row-note" data-row="{{$i}}">{{$row.Task.Notes}}</div>
