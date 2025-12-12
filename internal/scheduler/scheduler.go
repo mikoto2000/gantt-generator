@@ -19,12 +19,20 @@ func Schedule(tasks []model.Task) ([]model.Task, error) {
 	byName := make(map[string]model.Task, len(tasks))
 	for i := range tasks {
 		task := tasks[i]
+		if task.IsHeading {
+			continue
+		}
 		byName[task.Name] = task
 	}
 
 	indegree := make(map[string]int, len(tasks))
 	graph := make(map[string][]string, len(tasks))
+	schedulableCount := 0
 	for _, t := range tasks {
+		if t.IsHeading {
+			continue
+		}
+		schedulableCount++
 		indegree[t.Name] = len(t.DependsOn)
 		for _, dep := range t.DependsOn {
 			graph[dep] = append(graph[dep], t.Name)
@@ -65,13 +73,17 @@ func Schedule(tasks []model.Task) ([]model.Task, error) {
 		}
 	}
 
-	if scheduledCount != len(tasks) {
+	if scheduledCount != schedulableCount {
 		return nil, errors.New("cyclic dependency detected")
 	}
 
 	// Return tasks in original CSV-defined order.
 	ordered := make([]model.Task, 0, len(tasks))
 	for _, t := range tasks {
+		if t.IsHeading {
+			ordered = append(ordered, t)
+			continue
+		}
 		scheduledTask, ok := scheduled[t.Name]
 		if !ok {
 			return nil, fmt.Errorf("task %q could not be scheduled", t.Name)

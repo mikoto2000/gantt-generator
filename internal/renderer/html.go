@@ -38,6 +38,7 @@ func baseCSS() string {
   --row-height: 56px;
   --row-gap: 10px;
   --name-col-width: 200px;
+  --heading-row-height: var(--row-height);
 }
 
 * { box-sizing: border-box; }
@@ -103,6 +104,34 @@ body {
   height: var(--row-height);
   display: flex;
   align-items: center;
+}
+
+.heading {
+  background: linear-gradient(120deg, #fff, #f7f7ff);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-weight: 700;
+  color: #0f172a;
+  height: var(--heading-row-height);
+  display: flex;
+  align-items: center;
+}
+
+.heading {
+  background: linear-gradient(120deg, #fff, #f7f7ff);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-weight: 700;
+  color: #0f172a;
+  height: var(--row-height);
+  display: flex;
+  align-items: center;
+}
+
+.heading-spacer {
+  height: var(--row-height);
 }
 
 .name.header {
@@ -216,6 +245,10 @@ body {
   color: #0f172a;
   box-shadow: 0 5px 12px rgba(249, 115, 22, 0.28);
 }
+
+.heading-spacer {
+  height: var(--heading-row-height);
+}
 `
 }
 
@@ -241,8 +274,12 @@ const pageTemplate = `<!DOCTYPE html>
     <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};">
       <div class="name-list">
         <div class="name header">Task</div>
-        {{range .Tasks}}
-          <div class="name">{{.Name}}</div>
+        {{range .Rows}}
+          {{if .Heading}}
+            <div class="heading">{{.Heading}}</div>
+          {{else if .Task}}
+            <div class="name">{{.Task.Name}}</div>
+          {{end}}
         {{end}}
       </div>
       <div class="timeline-wrapper">
@@ -254,13 +291,17 @@ const pageTemplate = `<!DOCTYPE html>
             {{end}}
           </div>
           <div class="bars">
-            {{range .Tasks}}
-              <div class="bar-row grid">
-                <div class="bar plan" style="grid-column:{{add1 .StartIndex}} / span {{.Span}};" title="予定: {{formatDate .Start}} - {{formatDate .End}}">予定</div>
-                {{if .Actual}}
-                  <div class="bar actual" style="grid-column:{{add1 .Actual.StartIndex}} / span {{.Actual.Span}};" title="実績: {{formatDate .Actual.Start}} - {{formatDate .Actual.End}}">実績</div>
-                {{end}}
-              </div>
+            {{range .Rows}}
+              {{if .Heading}}
+                <div class="heading-spacer"></div>
+              {{else if .Task}}
+                <div class="bar-row grid">
+                  <div class="bar plan" style="grid-column:{{add1 .Task.StartIndex}} / span {{.Task.Span}};" title="予定: {{formatDate .Task.Start}} - {{formatDate .Task.End}}">予定</div>
+                  {{if .Task.Actual}}
+                    <div class="bar actual" style="grid-column:{{add1 .Task.Actual.StartIndex}} / span {{.Task.Actual.Span}};" title="実績: {{formatDate .Task.Actual.Start}} - {{formatDate .Task.Actual.End}}">実績</div>
+                  {{end}}
+                </div>
+              {{end}}
             {{end}}
           </div>
         </div>

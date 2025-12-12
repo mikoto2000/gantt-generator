@@ -16,16 +16,34 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 		return "", errors.New("no tasks to render")
 	}
 
-	minStart, maxEnd := tasks[0].ComputedStart, tasks[0].ComputedEnd
-	for _, t := range tasks[1:] {
-		if t.ComputedStart.Before(minStart) {
-			minStart = t.ComputedStart
+	var (
+		minStart time.Time
+		maxEnd   time.Time
+		setRange bool
+	)
+	for _, t := range tasks {
+		if t.IsHeading {
+			continue
 		}
-		if t.ComputedEnd.After(maxEnd) {
-			maxEnd = t.ComputedEnd
+		if !setRange {
+			minStart, maxEnd = t.ComputedStart, t.ComputedEnd
+			setRange = true
+		} else {
+			if t.ComputedStart.Before(minStart) {
+				minStart = t.ComputedStart
+			}
+			if t.ComputedEnd.After(maxEnd) {
+				maxEnd = t.ComputedEnd
+			}
 		}
 	}
+	if !setRange {
+		return "", errors.New("no schedulable tasks to render")
+	}
 	for _, t := range tasks {
+		if t.IsHeading {
+			continue
+		}
 		if t.HasActual() {
 			if t.ComputedActualStart.Before(minStart) {
 				minStart = *t.ComputedActualStart
@@ -47,9 +65,13 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 	days := daysRange(minStart, maxEnd)
 	todayIndex := daysBetween(minStart, today)
 
-	var rendered []renderTask
+	var rows []renderRow
 	var hasActual bool
 	for _, t := range tasks {
+		if t.IsHeading {
+			rows = append(rows, renderRow{Heading: t.Name})
+			continue
+		}
 		startIdx := daysBetween(minStart, t.ComputedStart)
 		span := daysBetween(t.ComputedStart, t.ComputedEnd) + 1
 		rt := renderTask{
@@ -70,12 +92,12 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 				End:        calendar.DateOnly(*t.ComputedActualEnd),
 			}
 		}
-		rendered = append(rendered, rt)
+		rows = append(rows, renderRow{Task: &rt})
 	}
 
 	ctx := renderContext{
 		Days:          days,
-		Tasks:         rendered,
+		Rows:          rows,
 		DayCount:      len(days),
 		TodayIndex:    todayIndex,
 		HasActual:     hasActual,
@@ -110,6 +132,11 @@ type renderTask struct {
 	Actual     *renderActual
 }
 
+type renderRow struct {
+	Heading string
+	Task    *renderTask
+}
+
 type renderActual struct {
 	StartIndex int
 	Span       int
@@ -119,7 +146,7 @@ type renderActual struct {
 
 type renderContext struct {
 	Days       []time.Time
-	Tasks      []renderTask
+	Rows       []renderRow
 	DayCount   int
 	TodayIndex int
 	HasActual  bool

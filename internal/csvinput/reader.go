@@ -86,6 +86,11 @@ func Read(path string) ([]model.Task, error) {
 		if err != nil {
 			return nil, err
 		}
+		if task.IsHeading {
+			tasks = append(tasks, task)
+			row++
+			continue
+		}
 		if _, exists := nameSet[task.Name]; exists {
 			return nil, fmt.Errorf("row %d: duplicate task name %q", row, task.Name)
 		}
@@ -127,6 +132,12 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	}
 
 	name := get("name")
+	if strings.HasPrefix(name, "#") {
+		return model.Task{
+			Name:      strings.TrimSpace(strings.TrimPrefix(name, "#")),
+			IsHeading: true,
+		}, nil
+	}
 	startStr := get("start")
 	endStr := get("end")
 	durationStr := get("duration")

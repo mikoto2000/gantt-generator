@@ -5,6 +5,7 @@ import "time"
 // Task represents a single CSV-defined task and its computed schedule.
 type Task struct {
 	Name                string
+	IsHeading           bool
 	Start               *time.Time
 	End                 *time.Time
 	DurationDays        int
