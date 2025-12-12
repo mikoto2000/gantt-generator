@@ -21,7 +21,7 @@ build: clean
 	for platform in $(PLATFORMS); do \
 		GOOS=$${platform%/*}; GOARCH=$${platform#*/}; \
 		ext=""; [ $$GOOS = "windows" ] && ext=".exe"; \
-		out="$(OUTPUT_DIR)/$(PROJECT)_$${GOOS}_$${GOARCH}$$ext"; \
+		out="$(OUTPUT_DIR)/$(PROJECT)-$${GOOS}-$${GOARCH}$$ext"; \
 		echo "Building $$out"; \
 		GOOS=$$GOOS GOARCH=$$GOARCH go build -o $$out $(PKG); \
 	done
