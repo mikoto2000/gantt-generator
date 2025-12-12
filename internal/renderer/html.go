@@ -38,6 +38,7 @@ func baseCSS() string {
   --row-height: 56px;
   --row-gap: 10px;
   --name-col-width: 200px;
+  --note-col-width: 240px;
   --heading-row-height: var(--row-height);
 }
 
@@ -59,6 +60,13 @@ body {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 8px 0 4px;
 }
 
@@ -80,8 +88,20 @@ body {
 .legend-swatch.plan { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
 .legend-swatch.actual { background: linear-gradient(135deg, var(--actual), var(--actual-2)); }
 
+.toggle-notes {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #111827;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+}
+
 .gantt {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--name-col-width) 1fr var(--note-col-width);
   gap: 12px;
   align-items: flex-start;
 }
@@ -116,22 +136,6 @@ body {
   height: var(--heading-row-height);
   display: flex;
   align-items: center;
-}
-
-.heading {
-  background: linear-gradient(120deg, #fff, #f7f7ff);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0 12px;
-  font-weight: 700;
-  color: #0f172a;
-  height: var(--row-height);
-  display: flex;
-  align-items: center;
-}
-
-.heading-spacer {
-  height: var(--row-height);
 }
 
 .name.header {
@@ -249,6 +253,49 @@ body {
 .heading-spacer {
   height: var(--heading-row-height);
 }
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  padding: 12px 0 16px 0;
+  min-width: var(--note-col-width);
+}
+
+.note {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #111827;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  min-height: var(--row-height);
+  display: flex;
+  align-items: center;
+  white-space: pre-wrap;
+}
+
+.note.header {
+  background: linear-gradient(120deg, #fff, #f0f4ff);
+  font-weight: 700;
+  height: var(--timeline-header-height);
+  align-items: flex-end;
+  cursor: pointer;
+}
+
+.note.empty {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.notes-hidden .notes-list {
+  display: none;
+}
+.notes-hidden .gantt {
+  grid-template-columns: var(--name-col-width) 1fr;
+}
 `
 }
 
@@ -267,9 +314,12 @@ const pageTemplate = `<!DOCTYPE html>
 <body>
   <div class="page">
     <h1>Gantt Chart</h1>
-    <div class="legend">
-      <div class="legend-item"><span class="legend-swatch plan"></span><span>予定</span></div>
-      {{if .HasActual}}<div class="legend-item"><span class="legend-swatch actual"></span><span>実績</span></div>{{end}}
+    <div class="legend-row">
+      <div class="legend">
+        <div class="legend-item"><span class="legend-swatch plan"></span><span>予定</span></div>
+        {{if .HasActual}}<div class="legend-item"><span class="legend-swatch actual"></span><span>実績</span></div>{{end}}
+      </div>
+      {{if .HasNotes}}<button id="toggle-notes" class="toggle-notes" type="button">備考を隠す</button>{{end}}
     </div>
     <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};">
       <div class="name-list">
@@ -306,6 +356,22 @@ const pageTemplate = `<!DOCTYPE html>
           </div>
         </div>
       </div>
+      {{if .HasNotes}}
+      <div class="notes-list">
+        <div class="note header">備考</div>
+        {{range .Rows}}
+          {{if .Heading}}
+            <div class="note empty"></div>
+          {{else if .Task}}
+            {{if .Task.Notes}}
+              <div class="note">{{.Task.Notes}}</div>
+            {{else}}
+              <div class="note empty"></div>
+            {{end}}
+          {{end}}
+        {{end}}
+      </div>
+      {{end}}
     </div>
   </div>
   {{if .LiveReloadURL}}
@@ -320,6 +386,27 @@ const pageTemplate = `<!DOCTYPE html>
       console.warn('LiveReload unavailable', e);
     }
   })();
+  </script>
+  {{end}}
+  {{if .HasNotes}}
+  <script>
+    (function() {
+      var btn = document.getElementById('toggle-notes');
+      var header = document.querySelector('.note.header');
+      var toggle = function() {
+        document.body.classList.toggle('notes-hidden');
+        if (btn) {
+          btn.textContent = document.body.classList.contains('notes-hidden') ? '備考を表示' : '備考を隠す';
+        }
+      };
+      if (btn) {
+        btn.addEventListener('click', toggle);
+      }
+      if (header) {
+        header.addEventListener('click', toggle);
+        header.title = 'クリックで備考の表示/非表示を切替';
+      }
+    })();
   </script>
   {{end}}
 </body>

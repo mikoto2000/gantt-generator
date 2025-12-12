@@ -67,6 +67,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 
 	var rows []renderRow
 	var hasActual bool
+	var hasNotes bool
 	for _, t := range tasks {
 		if t.IsHeading {
 			rows = append(rows, renderRow{Heading: t.Name})
@@ -76,6 +77,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 		span := daysBetween(t.ComputedStart, t.ComputedEnd) + 1
 		rt := renderTask{
 			Name:       t.Name,
+			Notes:      t.Notes,
 			StartIndex: startIdx,
 			Span:       span,
 			Start:      calendar.DateOnly(t.ComputedStart),
@@ -92,6 +94,9 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 				End:        calendar.DateOnly(*t.ComputedActualEnd),
 			}
 		}
+		if t.Notes != "" {
+			hasNotes = true
+		}
 		rows = append(rows, renderRow{Task: &rt})
 	}
 
@@ -101,6 +106,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 		DayCount:      len(days),
 		TodayIndex:    todayIndex,
 		HasActual:     hasActual,
+		HasNotes:      hasNotes,
 		LiveReloadURL: liveReloadURL,
 		CSS:           template.CSS(baseCSS()),
 	}
@@ -125,6 +131,7 @@ func daysBetween(start, end time.Time) int {
 
 type renderTask struct {
 	Name       string
+	Notes      string
 	StartIndex int
 	Span       int
 	Start      time.Time
@@ -150,6 +157,7 @@ type renderContext struct {
 	DayCount   int
 	TodayIndex int
 	HasActual  bool
+	HasNotes   bool
 	LiveReloadURL string
 	CSS        template.CSS
 }

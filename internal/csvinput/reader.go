@@ -30,6 +30,8 @@ var (
 		"実績開始":  "actual_start",
 		"実績終了":  "actual_end",
 		"実績期間":  "actual_duration",
+		"備考":    "notes",
+		"notes":   "notes",
 	}
 	dateLayouts = []string{
 		"2006-01-02", // zero-padded dash
@@ -145,6 +147,7 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	actualStartStr := get("actual_start")
 	actualEndStr := get("actual_end")
 	actualDurationStr := get("actual_duration")
+	notesStr := get("notes")
 
 	if name == "" {
 		return model.Task{}, fmt.Errorf("row %d: name is required", row)
@@ -153,6 +156,7 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	task := model.Task{
 		Name:      name,
 		DependsOn: parseDepends(dependsStr),
+		Notes:     notesStr,
 	}
 
 	if startStr != "" {
