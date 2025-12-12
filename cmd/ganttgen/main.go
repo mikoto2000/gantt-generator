@@ -16,23 +16,31 @@ import (
 	"ganttgen/internal/scheduler"
 )
 
+var version = "dev"
+
 func main() {
 	var output string
 	var holidaysPath string
 	var watch bool
 	var liveReload bool
 	var liveReloadPort int
+	var showVersion bool
 	flag.StringVar(&output, "o", "gantt.html", "output HTML file")
 	flag.StringVar(&output, "output", "gantt.html", "output HTML file")
 	flag.StringVar(&holidaysPath, "holidays", "", "optional YAML file listing YYYY-MM-DD holidays")
 	flag.BoolVar(&watch, "watch", false, "watch input CSV and regenerate on changes")
 	flag.BoolVar(&liveReload, "livereload", false, "enable livereload server and inject client script")
 	flag.IntVar(&liveReloadPort, "livereload-port", 35729, "port for livereload server (default 35729)")
+	flag.BoolVar(&showVersion, "version", false, "print version and exit")
 	flag.Parse()
 
 	args := flag.Args()
+	if showVersion {
+		fmt.Println(versionString())
+		return
+	}
 	if len(args) != 1 {
-		fmt.Fprintf(os.Stderr, "Usage: ganttgen [--output file] [--holidays file] [--watch] [--livereload] [--livereload-port port] <input.csv>\n")
+		fmt.Fprintf(os.Stderr, "Usage: ganttgen [--output file] [--holidays file] [--watch] [--livereload] [--livereload-port port] [--version] <input.csv>\n")
 		os.Exit(1)
 	}
 	input := args[0]
@@ -215,4 +223,8 @@ func (lr *liveReloader) Reload() {
 		default:
 		}
 	}
+}
+
+func versionString() string {
+	return fmt.Sprintf("%s", version)
 }

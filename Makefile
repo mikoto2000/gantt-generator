@@ -1,5 +1,6 @@
 PROJECT := ganttgen
 PKG := ./cmd/ganttgen
+VERSION ?= 1.0.0
 
 PLATFORMS := \
 	darwin/amd64 \
@@ -23,7 +24,7 @@ build: clean
 		ext=""; [ $$GOOS = "windows" ] && ext=".exe"; \
 		out="$(OUTPUT_DIR)/$(PROJECT)-$${GOOS}-$${GOARCH}$$ext"; \
 		echo "Building $$out"; \
-		GOOS=$$GOOS GOARCH=$$GOARCH go build -o $$out $(PKG); \
+		GOOS=$$GOOS GOARCH=$$GOARCH go build -ldflags "-s -w -X main.version=$(VERSION)" -o $$out $(PKG); \
 	done
 
 clean:
