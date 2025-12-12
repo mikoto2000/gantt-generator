@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
-	"net/http"
+	"sync"
 	"syscall"
 	"time"
-	"sync"
 
 	"ganttgen/internal/calendar"
 	"ganttgen/internal/csvinput"

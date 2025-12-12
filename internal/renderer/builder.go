@@ -152,12 +152,12 @@ type renderActual struct {
 }
 
 type renderContext struct {
-	Days       []time.Time
-	Rows       []renderRow
-	DayCount   int
-	TodayIndex int
-	HasActual  bool
-	HasNotes   bool
+	Days          []time.Time
+	Rows          []renderRow
+	DayCount      int
+	TodayIndex    int
+	HasActual     bool
+	HasNotes      bool
 	LiveReloadURL string
-	CSS        template.CSS
+	CSS           template.CSS
 }

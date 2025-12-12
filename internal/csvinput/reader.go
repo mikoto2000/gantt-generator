@@ -31,7 +31,7 @@ var (
 		"実績終了":  "actual_end",
 		"実績期間":  "actual_duration",
 		"備考":    "notes",
-		"notes":   "notes",
+		"notes": "notes",
 	}
 	dateLayouts = []string{
 		"2006-01-02", // zero-padded dash
