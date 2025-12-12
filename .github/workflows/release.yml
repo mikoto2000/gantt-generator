@@ -1,0 +1,24 @@
+name: release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v5
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.25.5'
+    - name: Build
+      run: make
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: dist/*
+        allowUpdates: true
+        draft: true
+        omitBodyDuringUpdate: true
+
