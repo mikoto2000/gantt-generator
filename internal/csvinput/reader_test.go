@@ -68,7 +68,7 @@ A,2024-06-04,,1d,
 
 func TestReadDetectsShiftJIS(t *testing.T) {
 	content := "タスク名,開始,終了,期間,依存\n計画,2024-06-03,,2d,\n"
-	encoded, err := transform.String(japanese.ShiftJIS.NewEncoder(), content)
+	encoded, _, err := transform.String(japanese.ShiftJIS.NewEncoder(), content)
 	if err != nil {
 		t.Fatalf("encode to Shift_JIS: %v", err)
 	}

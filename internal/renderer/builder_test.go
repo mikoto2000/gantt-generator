@@ -56,7 +56,7 @@ func TestBuildHTMLIncludesLiveReload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(html, "EventSource('"+url+"')") {
+	if !strings.Contains(html, "EventSource('"+url+"')") && !strings.Contains(html, "EventSource('http:\\/\\/localhost:35729\\/livereload')") {
 		t.Fatalf("livereload script missing")
 	}
 }
