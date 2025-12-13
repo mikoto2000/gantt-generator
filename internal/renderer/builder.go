@@ -70,7 +70,10 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 	var hasNotes bool
 	for _, t := range tasks {
 		if t.IsHeading {
-			rows = append(rows, renderRow{Heading: t.Name})
+			if t.Notes != "" {
+				hasNotes = true
+			}
+			rows = append(rows, renderRow{Heading: t.Name, HeadingNotes: t.Notes})
 			continue
 		}
 		if t.DisplayOnly {
@@ -148,6 +151,7 @@ type renderTask struct {
 
 type renderRow struct {
 	Heading          string
+	HeadingNotes     string
 	DisplayOnly      string
 	DisplayOnlyNotes string
 	Task             *renderTask

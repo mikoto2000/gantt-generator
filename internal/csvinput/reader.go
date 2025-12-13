@@ -138,6 +138,7 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 		return model.Task{
 			Name:      strings.TrimSpace(strings.TrimPrefix(name, "#")),
 			IsHeading: true,
+			Notes:     get("notes"),
 		}, nil
 	}
 	startStr := get("start")
@@ -149,9 +150,9 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	actualDurationStr := get("actual_duration")
 	notesStr := get("notes")
 
-	// Name only (no scheduling/depends/actual/notes) -> display-only row.
-	if name != "" && startStr == "" && endStr == "" && durationStr == "" && dependsStr == "" && actualStartStr == "" && actualEndStr == "" && actualDurationStr == "" && notesStr == "" {
-		return model.Task{Name: name, DisplayOnly: true}, nil
+	// Name only (no scheduling/depends/actual) -> display-only row (notes allowed).
+	if name != "" && startStr == "" && endStr == "" && durationStr == "" && dependsStr == "" && actualStartStr == "" && actualEndStr == "" && actualDurationStr == "" {
+		return model.Task{Name: name, DisplayOnly: true, Notes: notesStr}, nil
 	}
 
 	if name == "" {

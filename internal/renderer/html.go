@@ -375,7 +375,11 @@ const pageTemplate = `<!DOCTYPE html>
         <div class="note header">備考</div>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
-            <div class="note empty row-note" data-row="{{$i}}"></div>
+            {{if $row.HeadingNotes}}
+              <div class="note row-note" data-row="{{$i}}">{{$row.HeadingNotes}}</div>
+            {{else}}
+              <div class="note empty row-note" data-row="{{$i}}"></div>
+            {{end}}
           {{else if $row.DisplayOnly}}
             {{if $row.DisplayOnlyNotes}}
               <div class="note row-note" data-row="{{$i}}">{{$row.DisplayOnlyNotes}}</div>
