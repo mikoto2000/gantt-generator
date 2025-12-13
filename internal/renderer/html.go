@@ -270,7 +270,6 @@ body {
   font-size: 13px;
   color: #111827;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
-  max-height: var(--row-height);
   min-height: var(--row-height);
   display: flex;
   align-items: flex-start;
