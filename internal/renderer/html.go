@@ -31,6 +31,7 @@ func baseCSS() string {
   --actual: #f97316;
   --actual-2: #fdba74;
   --line: #e0e5ef;
+  --task-border-line: #888888;
   --today: #ff5a5f;
   --bg: #f5f7fb;
   --timeline-header-height: 72px;
@@ -230,6 +231,7 @@ body {
   row-gap: 6px;
   padding: 2px 0;
   z-index: 1;
+  border-bottom: 1px dashed var(--task-border-line);
 }
 
 .bar {
@@ -252,6 +254,7 @@ body {
 
 .heading-spacer {
   height: var(--heading-row-height);
+  border-bottom: 1px dashed var(--task-border-line);
 }
 
 .notes-list {
