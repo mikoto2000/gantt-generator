@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -29,8 +30,8 @@ func main() {
 	var liveReload bool
 	var liveReloadPort int
 	var showVersion bool
-	flag.StringVar(&output, "o", "gantt.html", "output HTML file")
-	flag.StringVar(&output, "output", "gantt.html", "output HTML file")
+	flag.StringVar(&output, "o", "", "output HTML file (default: gantt.html in the input CSV directory)")
+	flag.StringVar(&output, "output", "", "output HTML file (default: gantt.html in the input CSV directory)")
 	flag.StringVar(&holidaysPath, "holidays", "", "optional YAML file listing YYYY-MM-DD holidays")
 	flag.BoolVar(&holidaysAsWorkdays, "holidays-as-workdays", false, "treat holidays as workdays even if --holidays is provided")
 	flag.StringVar(&templateCSVPath, "gen-template", "", "output an empty CSV template and exit")
@@ -58,6 +59,9 @@ func main() {
 		os.Exit(1)
 	}
 	input := args[0]
+	if output == "" {
+		output = filepath.Join(filepath.Dir(input), "gantt.html")
+	}
 
 	var lr *liveReloader
 	liveReloadURL := ""

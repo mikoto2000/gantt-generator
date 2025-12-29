@@ -52,7 +52,7 @@ Usage of ./dist/ganttgen:
 
 `ganttgen <input.csv>` で CSV からガントチャート HTML を生成します。
 
-デフォルト出力は `gantt.html` です。`-o`/`--output` で出力先を変更できます。`--holidays` で YYYY-MM-DD の配列を持つ yaml を渡すと、その日付を非稼働日として扱います。
+デフォルト出力は入力 CSV と同じディレクトリの `gantt.html` です。`-o`/`--output` で出力先を変更できます。`--holidays` で YYYY-MM-DD の配列を持つ yaml を渡すと、その日付を非稼働日として扱います。
 `--holidays-as-workdays` を付けると、`--holidays` を指定していても祝日を稼働日として扱います。
 `--gen-template` を付けると、`sample/sample.csv` と同じヘッダを持つ空の CSV テンプレートを出力して終了します。
 
