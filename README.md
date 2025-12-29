@@ -34,6 +34,8 @@ Usage of ./dist/ganttgen:
         optional YAML file listing YYYY-MM-DD holidays
   -holidays-as-workdays
         treat holidays as workdays even if --holidays is provided
+  -gen-template string
+        output an empty CSV template and exit
   -livereload
         enable livereload server and inject client script
   -livereload-port int
@@ -52,6 +54,7 @@ Usage of ./dist/ganttgen:
 
 デフォルト出力は `gantt.html` です。`-o`/`--output` で出力先を変更できます。`--holidays` で YYYY-MM-DD の配列を持つ yaml を渡すと、その日付を非稼働日として扱います。
 `--holidays-as-workdays` を付けると、`--holidays` を指定していても祝日を稼働日として扱います。
+`--gen-template` を付けると、`sample/sample.csv` と同じヘッダを持つ空の CSV テンプレートを出力して終了します。
 
 `--watch` を付けると CSV の更新を1秒間隔で検知し、都度再生成します（Ctrl+C で終了）。
 
