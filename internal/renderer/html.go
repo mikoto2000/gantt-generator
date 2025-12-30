@@ -13,6 +13,7 @@ func renderHTML(ctx renderContext) (string, error) {
 		"formatDate": formatDate,
 		"isWeekend":  func(t time.Time) bool { return !calendar.IsWorkday(t) },
 		"add1":       func(v int) int { return v + 1 },
+		"isOneDay":   func(span int) bool { return span == 1 },
 	}).Parse(pageTemplate))
 
 	var buf bytes.Buffer
@@ -332,7 +333,13 @@ body {
   align-items: center;
   padding: 0 10px;
   font-size: 13px;
+  white-space: nowrap;
   box-shadow: 0 6px 14px rgba(76, 111, 255, 0.25);
+}
+
+.bar.one-day {
+  justify-content: center;
+  padding: 0;
 }
 
 .bar.actual {
@@ -494,12 +501,12 @@ const pageTemplate = `<!DOCTYPE html>
                   <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
               {{else if $row.Task}}
                 <div class="bar-row grid row-bar{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">
-                  <div class="bar plan" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}">予定</div>
+                  <div class="bar plan{{if isOneDay $row.Task.Span}} one-day{{end}}" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}">予定</div>
                   {{if $row.Task.Actual}}
-                    <div class="bar actual" style="grid-column:{{add1 $row.Task.Actual.StartIndex}} / span {{$row.Task.Actual.Span}};" title="実績: {{formatDate $row.Task.Actual.Start}} - {{formatDate $row.Task.Actual.End}}">実績</div>
-                    {{end}}
-                  </div>
-                {{end}}
+                    <div class="bar actual{{if isOneDay $row.Task.Actual.Span}} one-day{{end}}" style="grid-column:{{add1 $row.Task.Actual.StartIndex}} / span {{$row.Task.Actual.Span}};" title="実績: {{formatDate $row.Task.Actual.Start}} - {{formatDate $row.Task.Actual.End}}">実績</div>
+                  {{end}}
+                </div>
+              {{end}}
               {{end}}
             </div>
           </div>
