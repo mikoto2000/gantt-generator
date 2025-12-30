@@ -143,10 +143,15 @@ body {
   background: linear-gradient(120deg, #fff, #f0f4ff);
   height: var(--timeline-header-height);
   align-items: flex-end;
+  position: sticky;
+  top: 0;
+  z-index: 4;
 }
 
 .timeline-wrapper {
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
   max-width: 100%;
 }
 
@@ -158,6 +163,28 @@ body {
   padding: 12px 12px 16px 12px;
   min-width: calc(var(--day-count) * var(--cell-width) + 24px);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.timeline-header-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.timeline-header-scroll,
+.timeline-body-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.timeline-header-surface {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 12px 0 12px;
+  min-width: calc(var(--day-count) * var(--cell-width) + 24px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 }
 
 .grid-surface::before {
@@ -220,7 +247,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--row-gap);
-  padding-top: var(--row-gap);
+  padding-top: 0;
 }
 
 .bar-row {
@@ -289,6 +316,9 @@ body {
   height: var(--timeline-header-height);
   align-items: flex-end;
   cursor: pointer;
+  position: sticky;
+  top: 0;
+  z-index: 4;
 }
 
 .note.empty {
@@ -348,28 +378,36 @@ const pageTemplate = `<!DOCTYPE html>
         {{end}}
       </div>
       <div class="timeline-wrapper">
-        <div class="grid-surface">
-          <div class="today-line"></div>
-          <div class="timeline-grid grid">
-            {{range .Days}}
-              <div class="day{{if isWeekend .}} weekend{{end}}"><span class="day-label">{{formatDate .}}</span></div>
-            {{end}}
+        <div class="timeline-header-wrap">
+          <div class="timeline-header-scroll">
+            <div class="timeline-header-surface">
+              <div class="timeline-grid grid">
+                {{range .Days}}
+                  <div class="day{{if isWeekend .}} weekend{{end}}"><span class="day-label">{{formatDate .}}</span></div>
+                {{end}}
+              </div>
+            </div>
           </div>
-          <div class="bars">
-            {{range $i, $row := .Rows}}
-              {{if $row.Heading}}
-                <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
-              {{else if $row.DisplayOnly}}
-                <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
-              {{else if $row.Task}}
-                <div class="bar-row grid row-bar" data-row="{{$i}}">
-                  <div class="bar plan" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}">予定</div>
-                  {{if $row.Task.Actual}}
-                    <div class="bar actual" style="grid-column:{{add1 $row.Task.Actual.StartIndex}} / span {{$row.Task.Actual.Span}};" title="実績: {{formatDate $row.Task.Actual.Start}} - {{formatDate $row.Task.Actual.End}}">実績</div>
-                  {{end}}
-                </div>
+        </div>
+        <div class="timeline-body-scroll">
+          <div class="grid-surface">
+            <div class="today-line"></div>
+            <div class="bars">
+              {{range $i, $row := .Rows}}
+                {{if $row.Heading}}
+                  <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
+                {{else if $row.DisplayOnly}}
+                  <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
+                {{else if $row.Task}}
+                  <div class="bar-row grid row-bar" data-row="{{$i}}">
+                    <div class="bar plan" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}">予定</div>
+                    {{if $row.Task.Actual}}
+                      <div class="bar actual" style="grid-column:{{add1 $row.Task.Actual.StartIndex}} / span {{$row.Task.Actual.Span}};" title="実績: {{formatDate $row.Task.Actual.Start}} - {{formatDate $row.Task.Actual.End}}">実績</div>
+                    {{end}}
+                  </div>
+                {{end}}
               {{end}}
-            {{end}}
+            </div>
           </div>
         </div>
       </div>
@@ -432,6 +470,20 @@ const pageTemplate = `<!DOCTYPE html>
       if (header) {
         header.addEventListener('click', toggle);
         header.title = 'クリックで備考の表示/非表示を切替';
+      }
+
+      var headerScroll = document.querySelector('.timeline-header-scroll');
+      var bodyScroll = document.querySelector('.timeline-body-scroll');
+      if (headerScroll && bodyScroll) {
+        var syncing = false;
+        var syncTo = function(source, target) {
+          if (syncing) return;
+          syncing = true;
+          target.scrollLeft = source.scrollLeft;
+          syncing = false;
+        };
+        headerScroll.addEventListener('scroll', function() { syncTo(headerScroll, bodyScroll); });
+        bodyScroll.addEventListener('scroll', function() { syncTo(bodyScroll, headerScroll); });
       }
 
       var rowHeight = getComputedStyle(document.documentElement).getPropertyValue('--row-height').trim();
