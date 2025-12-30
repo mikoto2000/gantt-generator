@@ -136,10 +136,12 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	}
 
 	name := get("name")
+	statusStr := get("status")
 	if strings.HasPrefix(name, "#") {
 		return model.Task{
 			Name:      strings.TrimSpace(strings.TrimPrefix(name, "#")),
 			IsHeading: true,
+			Status:    statusStr,
 			Notes:     get("notes"),
 		}, nil
 	}
@@ -150,7 +152,6 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	actualStartStr := get("actual_start")
 	actualEndStr := get("actual_end")
 	actualDurationStr := get("actual_duration")
-	statusStr := get("status")
 	notesStr := get("notes")
 
 	// Name only (no scheduling/depends/actual) -> display-only row (notes allowed).

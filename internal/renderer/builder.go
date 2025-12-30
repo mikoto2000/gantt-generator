@@ -73,7 +73,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 			if t.Notes != "" {
 				hasNotes = true
 			}
-			rows = append(rows, renderRow{Heading: t.Name, HeadingNotes: t.Notes})
+			rows = append(rows, renderRow{Heading: t.Name, HeadingStatus: t.Status, HeadingNotes: t.Notes})
 			continue
 		}
 		if t.DisplayOnly {
@@ -87,6 +87,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 		span := daysBetween(t.ComputedStart, t.ComputedEnd) + 1
 		rt := renderTask{
 			Name:       t.Name,
+			Status:     t.Status,
 			Notes:      t.Notes,
 			Cancelled:  t.IsCancelled(),
 			StartIndex: startIdx,
@@ -142,6 +143,7 @@ func daysBetween(start, end time.Time) int {
 
 type renderTask struct {
 	Name       string
+	Status     string
 	Notes      string
 	Cancelled  bool
 	StartIndex int
@@ -153,6 +155,7 @@ type renderTask struct {
 
 type renderRow struct {
 	Heading          string
+	HeadingStatus    string
 	HeadingNotes     string
 	DisplayOnly      string
 	DisplayOnlyNotes string

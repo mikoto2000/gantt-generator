@@ -40,6 +40,7 @@ func baseCSS() string {
   --row-gap: 10px;
   --name-col-width: 200px;
   --note-col-width: 240px;
+  --status-col-width: 90px;
   --heading-row-height: var(--row-height);
 }
 
@@ -102,7 +103,7 @@ body {
 
 .gantt {
   display: grid;
-  grid-template-columns: var(--name-col-width) 1fr var(--note-col-width);
+  grid-template-columns: var(--name-col-width) var(--status-col-width) 1fr var(--note-col-width);
   gap: 12px;
   align-items: flex-start;
 }
@@ -158,6 +159,55 @@ body {
   position: sticky;
   top: 0;
   z-index: 4;
+}
+
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  padding: 12px 0 16px 0;
+  min-width: var(--status-col-width);
+}
+
+.status {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  height: var(--row-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  font-size: 12px;
+}
+
+.status.header {
+  background: linear-gradient(120deg, #fff, #f0f4ff);
+  height: var(--timeline-header-height);
+  align-items: flex-end;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.status.heading-row {
+  background: linear-gradient(120deg, #fff, #f7f7ff);
+  font-weight: 700;
+  color: #0f172a;
+  height: var(--heading-row-height);
+}
+
+.status.empty {
+  color: transparent;
+}
+
+.status.row-cancelled {
+  background: #eef0f3;
+  color: #6b7280;
+  border-color: #d1d5db;
 }
 
 .timeline-wrapper {
@@ -356,7 +406,7 @@ body {
   display: none;
 }
 .notes-hidden .gantt {
-  grid-template-columns: var(--name-col-width) 1fr;
+  grid-template-columns: var(--name-col-width) var(--status-col-width) 1fr;
 }
 
 .row-name, .row-bar {
@@ -398,6 +448,26 @@ const pageTemplate = `<!DOCTYPE html>
             <div class="name row-name" data-row="{{$i}}">{{$row.DisplayOnly}}</div>
           {{else if $row.Task}}
             <div class="name row-name{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">{{$row.Task.Name}}</div>
+          {{end}}
+        {{end}}
+      </div>
+      <div class="status-list">
+        <div class="status header">状態</div>
+        {{range $i, $row := .Rows}}
+          {{if $row.Heading}}
+            {{if $row.HeadingStatus}}
+              <div class="status heading-row" data-row="{{$i}}">{{$row.HeadingStatus}}</div>
+            {{else}}
+              <div class="status heading-row" data-row="{{$i}}">&nbsp;</div>
+            {{end}}
+          {{else if $row.DisplayOnly}}
+            <div class="status empty" data-row="{{$i}}"></div>
+          {{else if $row.Task}}
+            {{if $row.Task.Status}}
+              <div class="status{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">{{$row.Task.Status}}</div>
+            {{else}}
+              <div class="status empty" data-row="{{$i}}"></div>
+            {{end}}
           {{end}}
         {{end}}
       </div>
@@ -517,6 +587,7 @@ const pageTemplate = `<!DOCTYPE html>
         if (note.classList.contains('empty')) return;
         var rowId = note.getAttribute('data-row');
         var name = document.querySelector('.row-name[data-row="' + rowId + '"]');
+        var status = document.querySelector('.status[data-row="' + rowId + '"]');
         var bar = document.querySelector('.row-bar[data-row="' + rowId + '"]');
         var expanded = false;
 
@@ -524,6 +595,7 @@ const pageTemplate = `<!DOCTYPE html>
           var hp = h + 'px';
           note.style.maxHeight = hp;
           if (name) name.style.minHeight = hp;
+          if (status) status.style.minHeight = hp;
           if (bar) bar.style.minHeight = hp;
         };
 
