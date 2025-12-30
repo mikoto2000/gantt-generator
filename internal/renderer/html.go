@@ -136,6 +136,7 @@ body {
 .bar-row.row-cancelled {
   background: #f1f3f6;
   border-radius: 8px;
+  box-shadow: 0 calc(-1 * var(--row-gap)) 0 0 #f1f3f6;
 }
 
 .heading {
