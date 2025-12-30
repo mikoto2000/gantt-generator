@@ -22,16 +22,18 @@ import (
 var (
 	requiredColumns = []string{"name", "start", "end", "duration", "depends_on"}
 	columnAliases   = map[string]string{
-		"タスク名":  "name",
-		"開始":    "start",
-		"終了":    "end",
-		"期間":    "duration",
-		"依存":    "depends_on",
-		"実績開始":  "actual_start",
-		"実績終了":  "actual_end",
-		"実績期間":  "actual_duration",
-		"備考":    "notes",
-		"notes": "notes",
+		"タスク名":   "name",
+		"開始":     "start",
+		"終了":     "end",
+		"期間":     "duration",
+		"依存":     "depends_on",
+		"実績開始":   "actual_start",
+		"実績終了":   "actual_end",
+		"実績期間":   "actual_duration",
+		"状態":     "status",
+		"備考":     "notes",
+		"notes":  "notes",
+		"status": "status",
 	}
 	dateLayouts = []string{
 		"2006-01-02", // zero-padded dash
@@ -148,6 +150,7 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	actualStartStr := get("actual_start")
 	actualEndStr := get("actual_end")
 	actualDurationStr := get("actual_duration")
+	statusStr := get("status")
 	notesStr := get("notes")
 
 	// Name only (no scheduling/depends/actual) -> display-only row (notes allowed).
@@ -163,6 +166,7 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 		Name:      name,
 		DependsOn: parseDepends(dependsStr),
 		Notes:     notesStr,
+		Status:    statusStr,
 	}
 
 	if startStr != "" {

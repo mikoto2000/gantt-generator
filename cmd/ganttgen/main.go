@@ -19,7 +19,7 @@ import (
 
 var version = "dev"
 
-const sampleCSVHeader = "タスク名,開始,終了,期間,依存,実績開始,実績終了,実績期間,備考\n"
+const sampleCSVHeader = "タスク名,状態,開始,終了,期間,依存,実績開始,実績終了,実績期間,備考\n"
 
 func main() {
 	var output string

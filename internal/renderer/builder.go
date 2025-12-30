@@ -88,6 +88,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 		rt := renderTask{
 			Name:       t.Name,
 			Notes:      t.Notes,
+			Cancelled:  t.IsCancelled(),
 			StartIndex: startIdx,
 			Span:       span,
 			Start:      calendar.DateOnly(t.ComputedStart),
@@ -142,6 +143,7 @@ func daysBetween(start, end time.Time) int {
 type renderTask struct {
 	Name       string
 	Notes      string
+	Cancelled  bool
 	StartIndex int
 	Span       int
 	Start      time.Time

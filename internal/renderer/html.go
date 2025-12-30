@@ -127,6 +127,17 @@ body {
   align-items: center;
 }
 
+.row-cancelled {
+  background: #eef0f3;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+.bar-row.row-cancelled {
+  background: #f1f3f6;
+  border-radius: 8px;
+}
+
 .heading {
   background: linear-gradient(120deg, #fff, #f7f7ff);
   border: 1px solid var(--line);
@@ -310,6 +321,12 @@ body {
   transition: max-height 0.2s ease;
 }
 
+.note.row-cancelled {
+  background: #eef0f3;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
 .note.header {
   background: linear-gradient(120deg, #fff, #f0f4ff);
   font-weight: 700;
@@ -326,6 +343,12 @@ body {
   border: none;
   box-shadow: none;
   cursor: default;
+}
+
+.note.empty.row-cancelled {
+  background: #eef0f3;
+  border: 1px solid #d1d5db;
+  box-shadow: none;
 }
 
 .notes-hidden .notes-list {
@@ -373,7 +396,7 @@ const pageTemplate = `<!DOCTYPE html>
           {{else if $row.DisplayOnly}}
             <div class="name row-name" data-row="{{$i}}">{{$row.DisplayOnly}}</div>
           {{else if $row.Task}}
-            <div class="name row-name" data-row="{{$i}}">{{$row.Task.Name}}</div>
+            <div class="name row-name{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">{{$row.Task.Name}}</div>
           {{end}}
         {{end}}
       </div>
@@ -398,11 +421,11 @@ const pageTemplate = `<!DOCTYPE html>
                   <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
                 {{else if $row.DisplayOnly}}
                   <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
-                {{else if $row.Task}}
-                  <div class="bar-row grid row-bar" data-row="{{$i}}">
-                    <div class="bar plan" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}">予定</div>
-                    {{if $row.Task.Actual}}
-                      <div class="bar actual" style="grid-column:{{add1 $row.Task.Actual.StartIndex}} / span {{$row.Task.Actual.Span}};" title="実績: {{formatDate $row.Task.Actual.Start}} - {{formatDate $row.Task.Actual.End}}">実績</div>
+              {{else if $row.Task}}
+                <div class="bar-row grid row-bar{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">
+                  <div class="bar plan" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}">予定</div>
+                  {{if $row.Task.Actual}}
+                    <div class="bar actual" style="grid-column:{{add1 $row.Task.Actual.StartIndex}} / span {{$row.Task.Actual.Span}};" title="実績: {{formatDate $row.Task.Actual.Start}} - {{formatDate $row.Task.Actual.End}}">実績</div>
                     {{end}}
                   </div>
                 {{end}}
@@ -429,9 +452,9 @@ const pageTemplate = `<!DOCTYPE html>
             {{end}}
           {{else if $row.Task}}
             {{if $row.Task.Notes}}
-              <div class="note row-note" data-row="{{$i}}">{{$row.Task.Notes}}</div>
+              <div class="note row-note{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">{{$row.Task.Notes}}</div>
             {{else}}
-              <div class="note empty row-note" data-row="{{$i}}"></div>
+              <div class="note empty row-note{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}"></div>
             {{end}}
           {{end}}
         {{end}}

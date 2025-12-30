@@ -49,6 +49,31 @@ Design,,,4d,Planning,2024-06-11,2024-06-17,
 	}
 }
 
+func TestReadStatusCancelled(t *testing.T) {
+	content := `name,start,end,duration,depends_on,status
+CancelledTask,2024-06-03,,1d,,cancelled
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "status.csv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	tasks, err := Read(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(tasks))
+	}
+	if tasks[0].Status != "cancelled" {
+		t.Fatalf("unexpected status: %q", tasks[0].Status)
+	}
+	if !tasks[0].IsCancelled() {
+		t.Fatalf("expected task to be cancelled")
+	}
+}
+
 func TestReadDuplicateName(t *testing.T) {
 	content := `name,start,end,duration,depends_on
 A,2024-06-03,,1d,

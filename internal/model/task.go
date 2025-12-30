@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // Task represents a single CSV-defined task and its computed schedule.
 type Task struct {
@@ -8,6 +11,7 @@ type Task struct {
 	IsHeading           bool
 	DisplayOnly         bool
 	Notes               string
+	Status              string
 	Start               *time.Time
 	End                 *time.Time
 	DurationDays        int
@@ -39,4 +43,10 @@ func (t Task) HasDuration() bool {
 // HasActual returns true when any actual-related date exists.
 func (t Task) HasActual() bool {
 	return t.ComputedActualStart != nil && t.ComputedActualEnd != nil
+}
+
+// IsCancelled reports whether the task is marked as cancelled by status.
+func (t Task) IsCancelled() bool {
+	status := strings.TrimSpace(strings.ToLower(t.Status))
+	return status == "cancelled" || status == "中止"
 }
