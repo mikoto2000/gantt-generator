@@ -223,6 +223,7 @@ body {
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 12px;
+  margin-top: -10px;
   padding: 12px 12px 16px 12px;
   min-width: calc(var(--day-count) * var(--cell-width) + 24px);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
