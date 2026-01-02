@@ -86,6 +86,7 @@ ganttgen --livereload [-o output.html] [--holidays holidays.yaml] <input.csv>
 | --- | --- | --- | --- |
 | name(タスク名) | string | ✔︎ | タスク名（ユニーク） |
 | status(状態) | string |  | `cancelled` / `中止` で中止扱い |
+| progress(進捗) | 0-100(%) |  | 進捗率（0-100、末尾に `%` も可） |
 | start(開始) | YYYY-MM-DD |  | 絶対開始日（非稼働日の場合は次稼働日にスライド） |
 | end(終了) | YYYY-MM-DD |  | 絶対終了日（duration と併用不可、単独指定不可） |
 | duration(期間) | Nd |  | 稼働日ベースの期間（例: `5d`） |
@@ -95,6 +96,8 @@ ganttgen --livereload [-o output.html] [--holidays holidays.yaml] <input.csv>
 | actual_duration(実績期間) | Nd |  | 実績期間（稼働日ベース。actual_start とセットで使用） |
 | notes(備考) | string |  | タスク備考（ガントチャート上に表示） |
 
+`progress(進捗)` 列がある場合、予定バーの色が進捗率に応じて変わります。
+
 上記以外の列はカスタム列として扱い、HTML の左側に追加列として表示します。
 
 サンプル CSV のように日本語ヘッダも使用できます（英語ヘッダと同義）。
@@ -102,9 +105,9 @@ ganttgen --livereload [-o output.html] [--holidays holidays.yaml] <input.csv>
 CSV サンプル:
 
 ```csv
-タスク名,状態,開始,終了,期間,依存,実績開始,実績終了,実績期間,備考
+タスク名,状態,進捗,開始,終了,期間,依存,実績開始,実績終了,実績期間,備考
 #要件定義,,,,,,,,,,
-タスク1,,2025/12/1,,2d,,2025/12/11,2025/12/15,,,備考1
+タスク1,,45%,2025/12/1,,2d,,2025/12/11,2025/12/15,,,備考1
 #設計,,,,,,,,,,
 タスク2,,,,3d,タスク1,,,,,備考2
 ```

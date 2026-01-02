@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"errors"
+	"fmt"
 	"html/template"
 	"strconv"
 	"strings"
@@ -13,7 +14,7 @@ import (
 
 // BuildHTML prepares render data and returns the final HTML string.
 // liveReloadURL, when non-empty, injects a small client to auto-refresh the page.
-func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string) (string, error) {
+func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string, hasProgressColumn bool) (string, error) {
 	if len(tasks) == 0 {
 		return "", errors.New("no tasks to render")
 	}
@@ -78,14 +79,15 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string)
 				hasNotes = true
 			}
 			rows = append(rows, renderRow{
-				Heading:       t.Name,
-				HeadingStatus: t.Status,
-				HeadingNotes:  t.Notes,
-				HeadingMuted:  t.IsCancelled() || t.IsCompleted(),
-				CustomValues:  customValues,
-				FilterName:    t.Name,
-				FilterStatus:  t.Status,
-				FilterNotes:   t.Notes,
+				Heading:        t.Name,
+				HeadingStatus:  t.Status,
+				HeadingNotes:   t.Notes,
+				HeadingMuted:   t.IsCancelled() || t.IsCompleted(),
+				CustomValues:   customValues,
+				FilterName:     t.Name,
+				FilterStatus:   t.Status,
+				FilterProgress: "",
+				FilterNotes:    t.Notes,
 			})
 			continue
 		}
@@ -99,21 +101,33 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string)
 				CustomValues:     customValues,
 				FilterName:       t.Name,
 				FilterStatus:     "",
+				FilterProgress:   "",
 				FilterNotes:      t.Notes,
 			})
 			continue
 		}
 		startIdx := daysBetween(minStart, t.ComputedStart)
 		span := daysBetween(t.ComputedStart, t.ComputedEnd) + 1
+		progressText := ""
+		hasProgress := false
+		progressPercent := 0
+		if t.ProgressPercent != nil {
+			hasProgress = true
+			progressPercent = *t.ProgressPercent
+			progressText = fmt.Sprintf("%d%%", progressPercent)
+		}
 		rt := renderTask{
-			Name:       t.Name,
-			Status:     t.Status,
-			Notes:      t.Notes,
-			Cancelled:  t.IsCancelled() || t.IsCompleted(),
-			StartIndex: startIdx,
-			Span:       span,
-			Start:      calendar.DateOnly(t.ComputedStart),
-			End:        calendar.DateOnly(t.ComputedEnd),
+			Name:            t.Name,
+			Status:          t.Status,
+			Notes:           t.Notes,
+			Cancelled:       t.IsCancelled() || t.IsCompleted(),
+			HasProgress:     hasProgress,
+			ProgressPercent: progressPercent,
+			ProgressText:    progressText,
+			StartIndex:      startIdx,
+			Span:            span,
+			Start:           calendar.DateOnly(t.ComputedStart),
+			End:             calendar.DateOnly(t.ComputedEnd),
 		}
 		if t.HasActual() {
 			hasActual = true
@@ -130,15 +144,23 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string)
 			hasNotes = true
 		}
 		rows = append(rows, renderRow{
-			Task:         &rt,
-			CustomValues: customValues,
-			FilterName:   t.Name,
-			FilterStatus: t.Status,
-			FilterNotes:  t.Notes,
+			Task:           &rt,
+			CustomValues:   customValues,
+			FilterName:     t.Name,
+			FilterStatus:   t.Status,
+			FilterProgress: progressText,
+			FilterNotes:    t.Notes,
 		})
 	}
 
-	filterColumns := buildFilterColumns(rows, hasNotes, customColumns)
+	filterColumns := buildFilterColumns(rows, hasNotes, hasProgressColumn, customColumns)
+	bodyClasses := []string{}
+	if customCount > 0 {
+		bodyClasses = append(bodyClasses, "has-custom")
+	}
+	if hasProgressColumn {
+		bodyClasses = append(bodyClasses, "has-progress")
+	}
 
 	ctx := renderContext{
 		Days:              days,
@@ -147,10 +169,12 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string)
 		TodayIndex:        todayIndex,
 		HasActual:         hasActual,
 		HasNotes:          hasNotes,
+		HasProgress:       hasProgressColumn,
 		HasCustomColumns:  customCount > 0,
 		CustomColumns:     customColumns,
 		CustomColumnCount: customCount,
 		FilterColumns:     filterColumns,
+		BodyClass:         strings.Join(bodyClasses, " "),
 		LiveReloadURL:     liveReloadURL,
 		CSS:               template.CSS(baseCSS()),
 	}
@@ -185,15 +209,19 @@ func padCustomValues(values []string, count int) []string {
 	return padded
 }
 
-func buildFilterColumns(rows []renderRow, hasNotes bool, customColumns []string) []filterColumn {
+func buildFilterColumns(rows []renderRow, hasNotes bool, hasProgress bool, customColumns []string) []filterColumn {
 	names := make([]string, 0, len(rows))
 	statuses := make([]string, 0, len(rows))
+	progresses := make([]string, 0, len(rows))
 	notes := make([]string, 0, len(rows))
 	customValues := make([][]string, len(customColumns))
 
 	for _, row := range rows {
 		names = append(names, row.FilterName)
 		statuses = append(statuses, row.FilterStatus)
+		if hasProgress {
+			progresses = append(progresses, row.FilterProgress)
+		}
 		notes = append(notes, row.FilterNotes)
 		for i := range customColumns {
 			if i < len(row.CustomValues) {
@@ -207,6 +235,9 @@ func buildFilterColumns(rows []renderRow, hasNotes bool, customColumns []string)
 	filterColumns := []filterColumn{
 		{Key: "name", Label: "Task", Values: uniqueValues(names)},
 		{Key: "status", Label: "状態", Values: uniqueValues(statuses)},
+	}
+	if hasProgress {
+		filterColumns = append(filterColumns, filterColumn{Key: "progress", Label: "進捗", Values: uniqueValues(progresses)})
 	}
 	if hasNotes {
 		filterColumns = append(filterColumns, filterColumn{Key: "notes", Label: "備考", Values: uniqueValues(notes)})
@@ -244,15 +275,18 @@ func uniqueValues(values []string) []string {
 }
 
 type renderTask struct {
-	Name       string
-	Status     string
-	Notes      string
-	Cancelled  bool
-	StartIndex int
-	Span       int
-	Start      time.Time
-	End        time.Time
-	Actual     *renderActual
+	Name            string
+	Status          string
+	Notes           string
+	Cancelled       bool
+	HasProgress     bool
+	ProgressPercent int
+	ProgressText    string
+	StartIndex      int
+	Span            int
+	Start           time.Time
+	End             time.Time
+	Actual          *renderActual
 }
 
 type renderRow struct {
@@ -266,6 +300,7 @@ type renderRow struct {
 	CustomValues     []string
 	FilterName       string
 	FilterStatus     string
+	FilterProgress   string
 	FilterNotes      string
 }
 
@@ -283,10 +318,12 @@ type renderContext struct {
 	TodayIndex        int
 	HasActual         bool
 	HasNotes          bool
+	HasProgress       bool
 	HasCustomColumns  bool
 	CustomColumns     []string
 	CustomColumnCount int
 	FilterColumns     []filterColumn
+	BodyClass         string
 	LiveReloadURL     string
 	CSS               template.CSS
 }

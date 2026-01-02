@@ -26,7 +26,7 @@ func TestBuildHTMLRendersTasks(t *testing.T) {
 		},
 	}
 
-	html, err := BuildHTML(tasks, "", nil)
+	html, err := BuildHTML(tasks, "", nil, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestBuildHTMLIncludesLiveReload(t *testing.T) {
 		{Name: "A", ComputedStart: day(2024, time.June, 3), ComputedEnd: day(2024, time.June, 3)},
 	}
 	url := "http://localhost:35729/livereload"
-	html, err := BuildHTML(tasks, url, nil)
+	html, err := BuildHTML(tasks, url, nil, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestBuildHTMLRendersCustomColumns(t *testing.T) {
 	}
 	customColumns := []string{"Priority", "Owner"}
 
-	html, err := BuildHTML(tasks, "", customColumns)
+	html, err := BuildHTML(tasks, "", customColumns, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -81,6 +81,29 @@ func TestBuildHTMLRendersCustomColumns(t *testing.T) {
 	}
 	if !strings.Contains(html, "High") || !strings.Contains(html, "Alice") {
 		t.Fatalf("custom column values not rendered")
+	}
+}
+
+func TestBuildHTMLRendersProgressColumn(t *testing.T) {
+	progress := 40
+	tasks := []model.Task{
+		{
+			Name:            "Task A",
+			ComputedStart:   day(2024, time.June, 3),
+			ComputedEnd:     day(2024, time.June, 3),
+			ProgressPercent: &progress,
+		},
+	}
+
+	html, err := BuildHTML(tasks, "", nil, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(html, "進捗") {
+		t.Fatalf("progress column header not rendered")
+	}
+	if !strings.Contains(html, "--progress:40") {
+		t.Fatalf("progress styling not applied")
 	}
 }
 

@@ -12,6 +12,7 @@ type Task struct {
 	DisplayOnly         bool
 	Notes               string
 	Status              string
+	ProgressPercent     *int
 	CustomValues        []string
 	Start               *time.Time
 	End                 *time.Time

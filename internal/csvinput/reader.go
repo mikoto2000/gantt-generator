@@ -22,18 +22,20 @@ import (
 var (
 	requiredColumns = []string{"name", "start", "end", "duration", "depends_on"}
 	columnAliases   = map[string]string{
-		"タスク名":   "name",
-		"開始":     "start",
-		"終了":     "end",
-		"期間":     "duration",
-		"依存":     "depends_on",
-		"実績開始":   "actual_start",
-		"実績終了":   "actual_end",
-		"実績期間":   "actual_duration",
-		"状態":     "status",
-		"備考":     "notes",
-		"notes":  "notes",
-		"status": "status",
+		"タスク名":     "name",
+		"開始":       "start",
+		"終了":       "end",
+		"期間":       "duration",
+		"依存":       "depends_on",
+		"実績開始":     "actual_start",
+		"実績終了":     "actual_end",
+		"実績期間":     "actual_duration",
+		"進捗":       "progress",
+		"状態":       "status",
+		"備考":       "notes",
+		"notes":    "notes",
+		"progress": "progress",
+		"status":   "status",
 	}
 	knownColumns = map[string]struct{}{
 		"name":            {},
@@ -44,6 +46,7 @@ var (
 		"actual_start":    {},
 		"actual_end":      {},
 		"actual_duration": {},
+		"progress":        {},
 		"status":          {},
 		"notes":           {},
 	}
@@ -61,27 +64,28 @@ type customColumn struct {
 }
 
 // Read parses the CSV file and returns tasks with their raw attributes.
-func Read(path string) ([]model.Task, []string, error) {
+func Read(path string) ([]model.Task, []string, bool, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, nil, fmt.Errorf("open csv: %w", err)
+		return nil, nil, false, fmt.Errorf("open csv: %w", err)
 	}
 
 	decoded, err := decodeCSVBytes(raw)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
 
 	reader := csv.NewReader(bytes.NewReader(decoded))
 	header, err := reader.Read()
 	if err != nil {
-		return nil, nil, fmt.Errorf("read header: %w", err)
+		return nil, nil, false, fmt.Errorf("read header: %w", err)
 	}
 
 	colIndex, customCols, err := mapColumns(header)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
+	_, hasProgressColumn := colIndex["progress"]
 
 	var tasks []model.Task
 	nameSet := make(map[string]struct{})
@@ -93,9 +97,9 @@ func Read(path string) ([]model.Task, []string, error) {
 		}
 		if err != nil {
 			if errors.Is(err, csv.ErrFieldCount) {
-				return nil, nil, fmt.Errorf("row %d: inconsistent field count", row)
+				return nil, nil, false, fmt.Errorf("row %d: inconsistent field count", row)
 			}
-			return nil, nil, fmt.Errorf("row %d: %w", row, err)
+			return nil, nil, false, fmt.Errorf("row %d: %w", row, err)
 		}
 
 		if recordAllEmpty(record) {
@@ -105,7 +109,7 @@ func Read(path string) ([]model.Task, []string, error) {
 
 		task, err := parseRecord(record, colIndex, customCols, row)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, false, err
 		}
 		if task.IsHeading {
 			tasks = append(tasks, task)
@@ -113,7 +117,7 @@ func Read(path string) ([]model.Task, []string, error) {
 			continue
 		}
 		if _, exists := nameSet[task.Name]; exists {
-			return nil, nil, fmt.Errorf("row %d: duplicate task name %q", row, task.Name)
+			return nil, nil, false, fmt.Errorf("row %d: duplicate task name %q", row, task.Name)
 		}
 		nameSet[task.Name] = struct{}{}
 		tasks = append(tasks, task)
@@ -121,10 +125,10 @@ func Read(path string) ([]model.Task, []string, error) {
 	}
 
 	if err := validateDependencies(tasks); err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
 
-	return tasks, customColumnNames(customCols), nil
+	return tasks, customColumnNames(customCols), hasProgressColumn, nil
 }
 
 func mapColumns(header []string) (map[string]int, []customColumn, error) {
@@ -182,6 +186,7 @@ func parseRecord(record []string, col map[string]int, customCols []customColumn,
 	actualStartStr := get("actual_start")
 	actualEndStr := get("actual_end")
 	actualDurationStr := get("actual_duration")
+	progressStr := get("progress")
 	notesStr := get("notes")
 
 	// Name only (no scheduling/depends/actual) -> display-only row (notes allowed).
@@ -199,6 +204,14 @@ func parseRecord(record []string, col map[string]int, customCols []customColumn,
 		Notes:        notesStr,
 		Status:       statusStr,
 		CustomValues: customValues,
+	}
+
+	if progressStr != "" {
+		percent, err := parseProgress(progressStr)
+		if err != nil {
+			return model.Task{}, fmt.Errorf("row %d: invalid progress: %w", row, err)
+		}
+		task.ProgressPercent = &percent
 	}
 
 	if startStr != "" {
@@ -311,6 +324,23 @@ func parseDuration(raw string) (int, error) {
 		return 0, errors.New("duration must be a positive integer followed by 'd'")
 	}
 	return days, nil
+}
+
+func parseProgress(raw string) (int, error) {
+	trimmed := strings.TrimSpace(raw)
+	trimmed = strings.TrimSuffix(trimmed, "%")
+	trimmed = strings.TrimSpace(trimmed)
+	if trimmed == "" {
+		return 0, errors.New("progress must be 0-100")
+	}
+	value, err := strconv.Atoi(trimmed)
+	if err != nil {
+		return 0, errors.New("progress must be an integer")
+	}
+	if value < 0 || value > 100 {
+		return 0, errors.New("progress must be between 0 and 100")
+	}
+	return value, nil
 }
 
 func validateDependencies(tasks []model.Task) error {

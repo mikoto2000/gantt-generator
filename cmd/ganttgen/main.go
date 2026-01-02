@@ -19,7 +19,7 @@ import (
 
 var version = "dev"
 
-const sampleCSVHeader = "タスク名,状態,開始,終了,期間,依存,実績開始,実績終了,実績期間,備考\n"
+const sampleCSVHeader = "タスク名,状態,進捗,開始,終了,期間,依存,実績開始,実績終了,実績期間,備考\n"
 
 func main() {
 	var output string
@@ -100,7 +100,7 @@ func generate(input, output, holidaysPath string, allWorkdays bool, liveReloadUR
 		}
 	}
 
-	tasks, customColumns, err := csvinput.Read(input)
+	tasks, customColumns, hasProgressColumn, err := csvinput.Read(input)
 	if err != nil {
 		return fmt.Errorf("error reading CSV: %w", err)
 	}
@@ -110,7 +110,7 @@ func generate(input, output, holidaysPath string, allWorkdays bool, liveReloadUR
 		return fmt.Errorf("error scheduling tasks: %w", err)
 	}
 
-	html, err := renderer.BuildHTML(scheduled, liveReloadURL, customColumns)
+	html, err := renderer.BuildHTML(scheduled, liveReloadURL, customColumns, hasProgressColumn)
 	if err != nil {
 		return fmt.Errorf("error rendering HTML: %w", err)
 	}

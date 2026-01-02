@@ -31,6 +31,7 @@ func baseCSS() string {
   --accent-2: #67b4ff;
   --actual: #f97316;
   --actual-2: #fdba74;
+  --progress-remaining: #ef4444;
   --line: #e0e5ef;
   --task-border-line: #888888;
   --today: #ff5a5f;
@@ -42,6 +43,7 @@ func baseCSS() string {
   --name-col-width: 200px;
   --note-col-width: 240px;
   --status-col-width: 90px;
+  --progress-col-width: 90px;
   --custom-col-width: 140px;
   --heading-row-height: var(--row-height);
 }
@@ -161,12 +163,24 @@ body {
   align-items: flex-start;
 }
 
+.has-progress .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) var(--progress-col-width) 1fr var(--note-col-width);
+}
+
 .has-custom .gantt {
   grid-template-columns: var(--name-col-width) var(--status-col-width) repeat(var(--custom-col-count-visible, var(--custom-col-count)), var(--custom-col-width)) 1fr var(--note-col-width);
 }
 
+.has-progress.has-custom .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) var(--progress-col-width) repeat(var(--custom-col-count-visible, var(--custom-col-count)), var(--custom-col-width)) 1fr var(--note-col-width);
+}
+
 .custom-hidden.has-custom .gantt {
   grid-template-columns: var(--name-col-width) var(--status-col-width) 1fr var(--note-col-width);
+}
+
+.custom-hidden.has-progress.has-custom .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) var(--progress-col-width) 1fr var(--note-col-width);
 }
 
 .name-list {
@@ -244,7 +258,30 @@ body {
   min-width: var(--status-col-width);
 }
 
+.progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  padding: 12px 0 16px 0;
+  min-width: var(--progress-col-width);
+}
+
 .status {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  height: var(--row-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  font-size: 12px;
+}
+
+.progress {
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -268,7 +305,23 @@ body {
   z-index: 4;
 }
 
+.progress.header {
+  background: linear-gradient(120deg, #fff, #f0f4ff);
+  height: var(--timeline-header-height);
+  align-items: flex-end;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
 .status.heading-row {
+  background: linear-gradient(120deg, #fff, #f7f7ff);
+  font-weight: 700;
+  color: #0f172a;
+  height: var(--heading-row-height);
+}
+
+.progress.heading-row {
   background: linear-gradient(120deg, #fff, #f7f7ff);
   font-weight: 700;
   color: #0f172a;
@@ -279,7 +332,17 @@ body {
   color: transparent;
 }
 
+.progress.empty {
+  color: transparent;
+}
+
 .status.row-cancelled {
+  background: #eef0f3;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+.progress.row-cancelled {
   background: #eef0f3;
   color: #6b7280;
   border-color: #d1d5db;
@@ -517,6 +580,17 @@ body {
   box-shadow: 0 5px 12px rgba(249, 115, 22, 0.28);
 }
 
+.bar.progress {
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--accent-2) calc(var(--progress) * 1%),
+    var(--progress-remaining) calc(var(--progress) * 1%),
+    #f87171 100%
+  );
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.25);
+}
+
 .heading-spacer {
   height: var(--heading-row-height);
   border-bottom: 1px dashed var(--task-border-line);
@@ -585,12 +659,24 @@ body {
   grid-template-columns: var(--name-col-width) var(--status-col-width) 1fr;
 }
 
+.notes-hidden.has-progress .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) var(--progress-col-width) 1fr;
+}
+
 .notes-hidden.has-custom .gantt {
   grid-template-columns: var(--name-col-width) var(--status-col-width) repeat(var(--custom-col-count-visible, var(--custom-col-count)), var(--custom-col-width)) 1fr;
 }
 
+.notes-hidden.has-progress.has-custom .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) var(--progress-col-width) repeat(var(--custom-col-count-visible, var(--custom-col-count)), var(--custom-col-width)) 1fr;
+}
+
 .custom-hidden.notes-hidden.has-custom .gantt {
   grid-template-columns: var(--name-col-width) var(--status-col-width) 1fr;
+}
+
+.custom-hidden.notes-hidden.has-progress.has-custom .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) var(--progress-col-width) 1fr;
 }
 
 .row-name, .row-bar {
@@ -612,7 +698,7 @@ const pageTemplate = `<!DOCTYPE html>
   <title>Gantt Chart</title>
   <style>{{.CSS}}</style>
 </head>
-<body{{if .HasCustomColumns}} class="has-custom"{{end}}>
+<body{{if .BodyClass}} class="{{.BodyClass}}"{{end}}>
   <div class="page">
     <h1>Gantt Chart</h1>
     <div class="legend-row">
@@ -657,11 +743,11 @@ const pageTemplate = `<!DOCTYPE html>
         <div class="name header" data-filter-key="name">Task</div>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
-            <div class="heading row-name{{if $row.HeadingMuted}} row-cancelled{{end}}" data-row="{{$i}}" data-heading="true" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.Heading}}</div>
+            <div class="heading row-name{{if $row.HeadingMuted}} row-cancelled{{end}}" data-row="{{$i}}" data-heading="true" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-progress="{{$row.FilterProgress}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.Heading}}</div>
           {{else if $row.DisplayOnly}}
-            <div class="name row-name" data-row="{{$i}}" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.DisplayOnly}}</div>
+            <div class="name row-name" data-row="{{$i}}" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-progress="{{$row.FilterProgress}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.DisplayOnly}}</div>
           {{else if $row.Task}}
-            <div class="name row-name{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.Task.Name}}</div>
+            <div class="name row-name{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-progress="{{$row.FilterProgress}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.Task.Name}}</div>
           {{end}}
         {{end}}
       </div>
@@ -685,6 +771,24 @@ const pageTemplate = `<!DOCTYPE html>
           {{end}}
         {{end}}
       </div>
+      {{if .HasProgress}}
+      <div class="progress-list">
+        <div class="progress header" data-filter-key="progress">進捗</div>
+        {{range $i, $row := .Rows}}
+          {{if $row.Heading}}
+            <div class="progress heading-row{{if $row.HeadingMuted}} row-cancelled{{end}}" data-row="{{$i}}">&nbsp;</div>
+          {{else if $row.DisplayOnly}}
+            <div class="progress empty" data-row="{{$i}}"></div>
+          {{else if $row.Task}}
+            {{if $row.Task.HasProgress}}
+              <div class="progress{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">{{$row.Task.ProgressText}}</div>
+            {{else}}
+              <div class="progress empty{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}"></div>
+            {{end}}
+          {{end}}
+        {{end}}
+      </div>
+      {{end}}
       {{if .HasCustomColumns}}
       <div class="custom-columns">
         {{range $colIndex, $colName := .CustomColumns}}
@@ -725,7 +829,7 @@ const pageTemplate = `<!DOCTYPE html>
                   <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
               {{else if $row.Task}}
                 <div class="bar-row grid row-bar{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">
-                  <div class="bar plan{{if isOneDay $row.Task.Span}} one-day{{end}}" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}">予定</div>
+                  <div class="bar plan{{if $row.Task.HasProgress}} progress{{end}}{{if isOneDay $row.Task.Span}} one-day{{end}}" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};{{if $row.Task.HasProgress}}--progress:{{$row.Task.ProgressPercent}};{{end}}" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}{{if $row.Task.HasProgress}} (進捗 {{$row.Task.ProgressText}}){{end}}">予定</div>
                   {{if $row.Task.Actual}}
                     <div class="bar actual{{if isOneDay $row.Task.Actual.Span}} one-day{{end}}" style="grid-column:{{add1 $row.Task.Actual.StartIndex}} / span {{$row.Task.Actual.Span}};" title="実績: {{formatDate $row.Task.Actual.Start}} - {{formatDate $row.Task.Actual.End}}">実績</div>
                   {{end}}
@@ -819,6 +923,7 @@ const pageTemplate = `<!DOCTYPE html>
         var rowId = note.getAttribute('data-row');
         var name = document.querySelector('.row-name[data-row="' + rowId + '"]');
         var status = document.querySelector('.status[data-row="' + rowId + '"]');
+        var progress = document.querySelector('.progress[data-row="' + rowId + '"]');
         var bar = document.querySelector('.row-bar[data-row="' + rowId + '"]');
         var customCells = document.querySelectorAll('.custom-cell[data-row="' + rowId + '"]');
         var expanded = false;
@@ -828,6 +933,7 @@ const pageTemplate = `<!DOCTYPE html>
           note.style.maxHeight = hp;
           if (name) name.style.minHeight = hp;
           if (status) status.style.minHeight = hp;
+          if (progress) progress.style.minHeight = hp;
           if (bar) bar.style.minHeight = hp;
           if (customCells.length) {
             customCells.forEach(function(cell) {
@@ -930,6 +1036,7 @@ const pageTemplate = `<!DOCTYPE html>
       var getRowValue = function(rowEl, key) {
         if (key === 'name') return rowEl.getAttribute('data-name') || '';
         if (key === 'status') return rowEl.getAttribute('data-status') || '';
+        if (key === 'progress') return rowEl.getAttribute('data-progress') || '';
         if (key === 'notes') return rowEl.getAttribute('data-notes') || '';
         if (key.indexOf('custom-') === 0) {
           var idx = key.slice('custom-'.length);
