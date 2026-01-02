@@ -442,6 +442,10 @@ body {
   display: none !important;
 }
 
+.group-hidden {
+  display: none !important;
+}
+
 .timeline-wrapper {
   display: flex;
   flex-direction: column;
@@ -1116,5 +1120,65 @@ const pageTemplate = `<!DOCTYPE html>
     })();
   </script>
   {{end}}
+  <script>
+    (function() {
+      var rowNames = document.querySelectorAll('.row-name[data-row]');
+      if (!rowNames.length) return;
+
+      var rowIdToIndex = {};
+      rowNames.forEach(function(rowEl, idx) {
+        var rowId = rowEl.getAttribute('data-row');
+        rowIdToIndex[rowId] = idx;
+      });
+
+      var headingRows = [];
+      rowNames.forEach(function(rowEl) {
+        if (rowEl.getAttribute('data-heading') === 'true') {
+          headingRows.push(rowEl);
+        }
+      });
+
+      var toggleGroup = function(headingEl) {
+        var startId = headingEl.getAttribute('data-row');
+        var startIndex = rowIdToIndex[startId];
+        if (startIndex == null) return;
+
+        var endIndex = rowNames.length;
+        for (var i = 0; i < headingRows.length; i++) {
+          if (headingRows[i] === headingEl) {
+            if (i + 1 < headingRows.length) {
+              var nextId = headingRows[i + 1].getAttribute('data-row');
+              endIndex = rowIdToIndex[nextId];
+            }
+            break;
+          }
+        }
+
+        var isHidden = headingEl.getAttribute('data-group-hidden') === 'true';
+        var nextHidden = !isHidden;
+        headingEl.setAttribute('data-group-hidden', nextHidden ? 'true' : 'false');
+
+        for (var idx = startIndex + 1; idx < endIndex; idx++) {
+          var rowId = rowNames[idx].getAttribute('data-row');
+          var rowEls = document.querySelectorAll('[data-row="' + rowId + '"]');
+          rowEls.forEach(function(el) {
+            if (nextHidden) {
+              el.classList.add('group-hidden');
+            } else {
+              el.classList.remove('group-hidden');
+            }
+          });
+        }
+      };
+
+      headingRows.forEach(function(headingEl) {
+        headingEl.style.cursor = 'pointer';
+        headingEl.title = 'クリックでグループの表示/非表示を切替';
+        headingEl.addEventListener('click', function() {
+          toggleGroup(headingEl);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>`
