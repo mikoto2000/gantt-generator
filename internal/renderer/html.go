@@ -111,7 +111,11 @@ body {
 }
 
 .has-custom .gantt {
-  grid-template-columns: var(--name-col-width) var(--status-col-width) repeat(var(--custom-col-count), var(--custom-col-width)) 1fr var(--note-col-width);
+  grid-template-columns: var(--name-col-width) var(--status-col-width) repeat(var(--custom-col-count-visible, var(--custom-col-count)), var(--custom-col-width)) 1fr var(--note-col-width);
+}
+
+.custom-hidden.has-custom .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) 1fr var(--note-col-width);
 }
 
 .name-list {
@@ -219,6 +223,11 @@ body {
 .custom-columns {
   display: flex;
   gap: 12px;
+  grid-column: span var(--custom-col-count-visible, var(--custom-col-count));
+}
+
+.custom-columns.hidden {
+  display: none;
 }
 
 .custom-list {
@@ -270,6 +279,35 @@ body {
   background: #eef0f3;
   color: #6b7280;
   border-color: #d1d5db;
+}
+
+.custom-list.hidden {
+  display: none;
+}
+
+.column-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.column-toggles-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.column-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.column-toggle input {
+  cursor: pointer;
 }
 
 .timeline-wrapper {
@@ -479,7 +517,11 @@ body {
 }
 
 .notes-hidden.has-custom .gantt {
-  grid-template-columns: var(--name-col-width) var(--status-col-width) repeat(var(--custom-col-count), var(--custom-col-width)) 1fr;
+  grid-template-columns: var(--name-col-width) var(--status-col-width) repeat(var(--custom-col-count-visible, var(--custom-col-count)), var(--custom-col-width)) 1fr;
+}
+
+.custom-hidden.notes-hidden.has-custom .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) 1fr;
 }
 
 .row-name, .row-bar {
@@ -509,9 +551,17 @@ const pageTemplate = `<!DOCTYPE html>
         <div class="legend-item"><span class="legend-swatch plan"></span><span>予定</span></div>
         {{if .HasActual}}<div class="legend-item"><span class="legend-swatch actual"></span><span>実績</span></div>{{end}}
       </div>
+      {{if .HasCustomColumns}}
+      <div class="column-toggles" id="custom-column-toggles">
+        <span class="column-toggles-label">列</span>
+        {{range $i, $name := .CustomColumns}}
+          <label class="column-toggle"><input type="checkbox" data-custom-col="{{$i}}" checked> {{$name}}</label>
+        {{end}}
+      </div>
+      {{end}}
       {{if .HasNotes}}<button id="toggle-notes" class="toggle-notes" type="button">備考を隠す</button>{{end}}
     </div>
-    <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};--custom-col-count:{{.CustomColumnCount}};">
+    <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};--custom-col-count:{{.CustomColumnCount}};--custom-col-count-visible:{{.CustomColumnCount}};">
       <div class="name-list">
         <div class="name header">Task</div>
         {{range $i, $row := .Rows}}
@@ -547,7 +597,7 @@ const pageTemplate = `<!DOCTYPE html>
       {{if .HasCustomColumns}}
       <div class="custom-columns">
         {{range $colIndex, $colName := .CustomColumns}}
-        <div class="custom-list">
+        <div class="custom-list" data-col="{{$colIndex}}">
           <div class="custom header">{{$colName}}</div>
           {{range $i, $row := $.Rows}}
             {{$value := index $row.CustomValues $colIndex}}
@@ -716,6 +766,44 @@ const pageTemplate = `<!DOCTYPE html>
           }
         });
       });
+    })();
+  </script>
+  {{end}}
+  {{if .HasCustomColumns}}
+  <script>
+    (function() {
+      var container = document.getElementById('custom-column-toggles');
+      if (!container) return;
+      var checkboxes = container.querySelectorAll('input[data-custom-col]');
+      var columnWrap = document.querySelector('.custom-columns');
+      var gantt = document.querySelector('.gantt');
+      var update = function() {
+        var visible = 0;
+        checkboxes.forEach(function(cb) {
+          var idx = cb.getAttribute('data-custom-col');
+          var lists = document.querySelectorAll('.custom-list[data-col="' + idx + '"]');
+          if (cb.checked) {
+            visible++;
+            lists.forEach(function(list) { list.classList.remove('hidden'); });
+          } else {
+            lists.forEach(function(list) { list.classList.add('hidden'); });
+          }
+        });
+        if (gantt) {
+          gantt.style.setProperty('--custom-col-count-visible', visible);
+        }
+        if (columnWrap) {
+          if (visible === 0) {
+            columnWrap.classList.add('hidden');
+            document.body.classList.add('custom-hidden');
+          } else {
+            columnWrap.classList.remove('hidden');
+            document.body.classList.remove('custom-hidden');
+          }
+        }
+      };
+      checkboxes.forEach(function(cb) { cb.addEventListener('change', update); });
+      update();
     })();
   </script>
   {{end}}
