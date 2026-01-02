@@ -74,6 +74,57 @@ body {
   margin: 8px 0 4px;
 }
 
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 10px 0 16px;
+}
+
+.filter {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.filter summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #111827;
+}
+
+.filter-body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-text {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.filter-values {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 140px;
+  overflow: auto;
+}
+
+.filter-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+
 .legend-item {
   display: flex;
   align-items: center;
@@ -308,6 +359,10 @@ body {
 
 .column-toggle input {
   cursor: pointer;
+}
+
+.row-hidden {
+  display: none !important;
 }
 
 .timeline-wrapper {
@@ -561,16 +616,38 @@ const pageTemplate = `<!DOCTYPE html>
       {{end}}
       {{if .HasNotes}}<button id="toggle-notes" class="toggle-notes" type="button">備考を隠す</button>{{end}}
     </div>
+    {{if .FilterColumns}}
+    <div class="filters" id="filters">
+      {{range .FilterColumns}}
+      <details class="filter" data-filter="{{.Key}}">
+        <summary>{{.Label}}</summary>
+        <div class="filter-body">
+          <input class="filter-text" type="text" data-filter-text="{{.Key}}" placeholder="キーワード">
+          {{ $key := .Key }}
+          <div class="filter-values">
+            {{range .Values}}
+              {{if eq . ""}}
+                <label class="filter-value"><input type="checkbox" data-filter-value="{{$key}}" value="__empty__"> (空)</label>
+              {{else}}
+                <label class="filter-value"><input type="checkbox" data-filter-value="{{$key}}" value="{{.}}"> {{.}}</label>
+              {{end}}
+            {{end}}
+          </div>
+        </div>
+      </details>
+      {{end}}
+    </div>
+    {{end}}
     <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};--custom-col-count:{{.CustomColumnCount}};--custom-col-count-visible:{{.CustomColumnCount}};">
       <div class="name-list">
         <div class="name header">Task</div>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
-            <div class="heading row-name" data-row="{{$i}}">{{$row.Heading}}</div>
+            <div class="heading row-name" data-row="{{$i}}" data-heading="true" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.Heading}}</div>
           {{else if $row.DisplayOnly}}
-            <div class="name row-name" data-row="{{$i}}">{{$row.DisplayOnly}}</div>
+            <div class="name row-name" data-row="{{$i}}" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.DisplayOnly}}</div>
           {{else if $row.Task}}
-            <div class="name row-name{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">{{$row.Task.Name}}</div>
+            <div class="name row-name{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.Task.Name}}</div>
           {{end}}
         {{end}}
       </div>
@@ -804,6 +881,104 @@ const pageTemplate = `<!DOCTYPE html>
       };
       checkboxes.forEach(function(cb) { cb.addEventListener('change', update); });
       update();
+    })();
+  </script>
+  {{end}}
+  {{if .FilterColumns}}
+  <script>
+    (function() {
+      var filters = document.getElementById('filters');
+      if (!filters) return;
+      var rowNames = document.querySelectorAll('.row-name[data-row]');
+      if (!rowNames.length) return;
+
+      var readFilters = function() {
+        var states = [];
+        var filterBlocks = filters.querySelectorAll('[data-filter]');
+        filterBlocks.forEach(function(block) {
+          var key = block.getAttribute('data-filter');
+          var textInput = block.querySelector('[data-filter-text="' + key + '"]');
+          var text = textInput ? textInput.value.trim().toLowerCase() : '';
+          var selected = {};
+          var anySelected = false;
+          var checks = block.querySelectorAll('[data-filter-value="' + key + '"]');
+          checks.forEach(function(cb) {
+            if (cb.checked) {
+              anySelected = true;
+              selected[cb.value] = true;
+            }
+          });
+          states.push({ key: key, text: text, selected: selected, anySelected: anySelected });
+        });
+        return states;
+      };
+
+      var getRowValue = function(rowEl, key) {
+        if (key === 'name') return rowEl.getAttribute('data-name') || '';
+        if (key === 'status') return rowEl.getAttribute('data-status') || '';
+        if (key === 'notes') return rowEl.getAttribute('data-notes') || '';
+        if (key.indexOf('custom-') === 0) {
+          var idx = key.slice('custom-'.length);
+          return rowEl.getAttribute('data-custom-' + idx) || '';
+        }
+        return '';
+      };
+
+      var rowMatches = function(rowEl, states) {
+        for (var i = 0; i < states.length; i++) {
+          var st = states[i];
+          var value = getRowValue(rowEl, st.key);
+          var trimmed = value.trim();
+          if (st.anySelected) {
+            var token = trimmed === '' ? '__empty__' : trimmed;
+            if (!st.selected[token]) return false;
+          }
+          if (st.text) {
+            if (trimmed.toLowerCase().indexOf(st.text) === -1) return false;
+          }
+        }
+        return true;
+      };
+
+      var applyFilters = function() {
+        var states = readFilters();
+        var matches = [];
+        rowNames.forEach(function(rowEl, idx) {
+          matches[idx] = rowMatches(rowEl, states);
+        });
+
+        // Keep section headers when any row in the section matches.
+        for (var i = 0; i < rowNames.length; i++) {
+          var rowEl = rowNames[i];
+          if (rowEl.getAttribute('data-heading') !== 'true') continue;
+          if (matches[i]) continue;
+          var hasVisible = false;
+          for (var j = i + 1; j < rowNames.length; j++) {
+            if (rowNames[j].getAttribute('data-heading') === 'true') break;
+            if (matches[j]) {
+              hasVisible = true;
+              break;
+            }
+          }
+          matches[i] = hasVisible;
+        }
+
+        rowNames.forEach(function(rowEl, idx) {
+          var rowId = rowEl.getAttribute('data-row');
+          var rowEls = document.querySelectorAll('[data-row="' + rowId + '"]');
+          rowEls.forEach(function(el) {
+            if (matches[idx]) {
+              el.classList.remove('row-hidden');
+            } else {
+              el.classList.add('row-hidden');
+            }
+          });
+        });
+      };
+
+      filters.addEventListener('input', applyFilters);
+      filters.addEventListener('change', applyFilters);
+      applyFilters();
     })();
   </script>
   {{end}}

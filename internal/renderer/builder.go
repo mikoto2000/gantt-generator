@@ -3,6 +3,8 @@ package renderer
 import (
 	"errors"
 	"html/template"
+	"strconv"
+	"strings"
 	"time"
 
 	"ganttgen/internal/calendar"
@@ -75,14 +77,29 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string)
 			if t.Notes != "" {
 				hasNotes = true
 			}
-			rows = append(rows, renderRow{Heading: t.Name, HeadingStatus: t.Status, HeadingNotes: t.Notes, CustomValues: customValues})
+			rows = append(rows, renderRow{
+				Heading:       t.Name,
+				HeadingStatus: t.Status,
+				HeadingNotes:  t.Notes,
+				CustomValues:  customValues,
+				FilterName:    t.Name,
+				FilterStatus:  t.Status,
+				FilterNotes:   t.Notes,
+			})
 			continue
 		}
 		if t.DisplayOnly {
 			if t.Notes != "" {
 				hasNotes = true
 			}
-			rows = append(rows, renderRow{DisplayOnly: t.Name, DisplayOnlyNotes: t.Notes, CustomValues: customValues})
+			rows = append(rows, renderRow{
+				DisplayOnly:      t.Name,
+				DisplayOnlyNotes: t.Notes,
+				CustomValues:     customValues,
+				FilterName:       t.Name,
+				FilterStatus:     "",
+				FilterNotes:      t.Notes,
+			})
 			continue
 		}
 		startIdx := daysBetween(minStart, t.ComputedStart)
@@ -111,8 +128,16 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string)
 		if t.Notes != "" {
 			hasNotes = true
 		}
-		rows = append(rows, renderRow{Task: &rt, CustomValues: customValues})
+		rows = append(rows, renderRow{
+			Task:         &rt,
+			CustomValues: customValues,
+			FilterName:   t.Name,
+			FilterStatus: t.Status,
+			FilterNotes:  t.Notes,
+		})
 	}
+
+	filterColumns := buildFilterColumns(rows, hasNotes, customColumns)
 
 	ctx := renderContext{
 		Days:              days,
@@ -124,6 +149,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string)
 		HasCustomColumns:  customCount > 0,
 		CustomColumns:     customColumns,
 		CustomColumnCount: customCount,
+		FilterColumns:     filterColumns,
 		LiveReloadURL:     liveReloadURL,
 		CSS:               template.CSS(baseCSS()),
 	}
@@ -158,6 +184,64 @@ func padCustomValues(values []string, count int) []string {
 	return padded
 }
 
+func buildFilterColumns(rows []renderRow, hasNotes bool, customColumns []string) []filterColumn {
+	names := make([]string, 0, len(rows))
+	statuses := make([]string, 0, len(rows))
+	notes := make([]string, 0, len(rows))
+	customValues := make([][]string, len(customColumns))
+
+	for _, row := range rows {
+		names = append(names, row.FilterName)
+		statuses = append(statuses, row.FilterStatus)
+		notes = append(notes, row.FilterNotes)
+		for i := range customColumns {
+			if i < len(row.CustomValues) {
+				customValues[i] = append(customValues[i], row.CustomValues[i])
+			} else {
+				customValues[i] = append(customValues[i], "")
+			}
+		}
+	}
+
+	filterColumns := []filterColumn{
+		{Key: "name", Label: "Task", Values: uniqueValues(names)},
+		{Key: "status", Label: "状態", Values: uniqueValues(statuses)},
+	}
+	if hasNotes {
+		filterColumns = append(filterColumns, filterColumn{Key: "notes", Label: "備考", Values: uniqueValues(notes)})
+	}
+	for i, col := range customColumns {
+		filterColumns = append(filterColumns, filterColumn{
+			Key:    "custom-" + strconv.Itoa(i),
+			Label:  col,
+			Values: uniqueValues(customValues[i]),
+		})
+	}
+	return filterColumns
+}
+
+func uniqueValues(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	var res []string
+	hasEmpty := false
+	for _, v := range values {
+		trimmed := strings.TrimSpace(v)
+		if trimmed == "" {
+			hasEmpty = true
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		res = append(res, trimmed)
+	}
+	if hasEmpty {
+		res = append(res, "")
+	}
+	return res
+}
+
 type renderTask struct {
 	Name       string
 	Status     string
@@ -178,6 +262,9 @@ type renderRow struct {
 	DisplayOnlyNotes string
 	Task             *renderTask
 	CustomValues     []string
+	FilterName       string
+	FilterStatus     string
+	FilterNotes      string
 }
 
 type renderActual struct {
@@ -197,6 +284,13 @@ type renderContext struct {
 	HasCustomColumns  bool
 	CustomColumns     []string
 	CustomColumnCount int
+	FilterColumns     []filterColumn
 	LiveReloadURL     string
 	CSS               template.CSS
+}
+
+type filterColumn struct {
+	Key    string
+	Label  string
+	Values []string
 }
