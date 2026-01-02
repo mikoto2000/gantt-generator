@@ -26,7 +26,7 @@ func TestBuildHTMLRendersTasks(t *testing.T) {
 		},
 	}
 
-	html, err := BuildHTML(tasks, "")
+	html, err := BuildHTML(tasks, "", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -52,12 +52,35 @@ func TestBuildHTMLIncludesLiveReload(t *testing.T) {
 		{Name: "A", ComputedStart: day(2024, time.June, 3), ComputedEnd: day(2024, time.June, 3)},
 	}
 	url := "http://localhost:35729/livereload"
-	html, err := BuildHTML(tasks, url)
+	html, err := BuildHTML(tasks, url, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(html, "EventSource('"+url+"')") && !strings.Contains(html, "EventSource('http:\\/\\/localhost:35729\\/livereload')") {
 		t.Fatalf("livereload script missing")
+	}
+}
+
+func TestBuildHTMLRendersCustomColumns(t *testing.T) {
+	tasks := []model.Task{
+		{
+			Name:          "Task A",
+			ComputedStart: day(2024, time.June, 3),
+			ComputedEnd:   day(2024, time.June, 3),
+			CustomValues:  []string{"High", "Alice"},
+		},
+	}
+	customColumns := []string{"Priority", "Owner"}
+
+	html, err := BuildHTML(tasks, "", customColumns)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(html, "Priority") || !strings.Contains(html, "Owner") {
+		t.Fatalf("custom column headers not rendered")
+	}
+	if !strings.Contains(html, "High") || !strings.Contains(html, "Alice") {
+		t.Fatalf("custom column values not rendered")
 	}
 }
 

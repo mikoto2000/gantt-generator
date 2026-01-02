@@ -35,6 +35,18 @@ var (
 		"notes":  "notes",
 		"status": "status",
 	}
+	knownColumns = map[string]struct{}{
+		"name":            {},
+		"start":           {},
+		"end":             {},
+		"duration":        {},
+		"depends_on":      {},
+		"actual_start":    {},
+		"actual_end":      {},
+		"actual_duration": {},
+		"status":          {},
+		"notes":           {},
+	}
 	dateLayouts = []string{
 		"2006-01-02", // zero-padded dash
 		"2006-1-2",   // non-padded dash
@@ -43,27 +55,32 @@ var (
 	}
 )
 
+type customColumn struct {
+	Name  string
+	Index int
+}
+
 // Read parses the CSV file and returns tasks with their raw attributes.
-func Read(path string) ([]model.Task, error) {
+func Read(path string) ([]model.Task, []string, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("open csv: %w", err)
+		return nil, nil, fmt.Errorf("open csv: %w", err)
 	}
 
 	decoded, err := decodeCSVBytes(raw)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	reader := csv.NewReader(bytes.NewReader(decoded))
 	header, err := reader.Read()
 	if err != nil {
-		return nil, fmt.Errorf("read header: %w", err)
+		return nil, nil, fmt.Errorf("read header: %w", err)
 	}
 
-	colIndex, err := mapColumns(header)
+	colIndex, customCols, err := mapColumns(header)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var tasks []model.Task
@@ -76,9 +93,9 @@ func Read(path string) ([]model.Task, error) {
 		}
 		if err != nil {
 			if errors.Is(err, csv.ErrFieldCount) {
-				return nil, fmt.Errorf("row %d: inconsistent field count", row)
+				return nil, nil, fmt.Errorf("row %d: inconsistent field count", row)
 			}
-			return nil, fmt.Errorf("row %d: %w", row, err)
+			return nil, nil, fmt.Errorf("row %d: %w", row, err)
 		}
 
 		if recordAllEmpty(record) {
@@ -86,9 +103,9 @@ func Read(path string) ([]model.Task, error) {
 			continue
 		}
 
-		task, err := parseRecord(record, colIndex, row)
+		task, err := parseRecord(record, colIndex, customCols, row)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if task.IsHeading {
 			tasks = append(tasks, task)
@@ -96,7 +113,7 @@ func Read(path string) ([]model.Task, error) {
 			continue
 		}
 		if _, exists := nameSet[task.Name]; exists {
-			return nil, fmt.Errorf("row %d: duplicate task name %q", row, task.Name)
+			return nil, nil, fmt.Errorf("row %d: duplicate task name %q", row, task.Name)
 		}
 		nameSet[task.Name] = struct{}{}
 		tasks = append(tasks, task)
@@ -104,30 +121,41 @@ func Read(path string) ([]model.Task, error) {
 	}
 
 	if err := validateDependencies(tasks); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return tasks, nil
+	return tasks, customColumnNames(customCols), nil
 }
 
-func mapColumns(header []string) (map[string]int, error) {
+func mapColumns(header []string) (map[string]int, []customColumn, error) {
 	mapped := make(map[string]int)
+	var customCols []customColumn
+	seenCustom := make(map[string]struct{})
 	for idx, col := range header {
 		key := strings.ToLower(strings.TrimSpace(col))
 		if canonical, ok := columnAliases[key]; ok {
 			key = canonical
 		}
 		mapped[key] = idx
+		if _, ok := knownColumns[key]; !ok {
+			trimmed := strings.TrimSpace(col)
+			if trimmed != "" {
+				if _, seen := seenCustom[trimmed]; !seen {
+					seenCustom[trimmed] = struct{}{}
+					customCols = append(customCols, customColumn{Name: trimmed, Index: idx})
+				}
+			}
+		}
 	}
 	for _, col := range requiredColumns {
 		if _, ok := mapped[col]; !ok {
-			return nil, fmt.Errorf("missing required column: %s", col)
+			return nil, nil, fmt.Errorf("missing required column: %s", col)
 		}
 	}
-	return mapped, nil
+	return mapped, customCols, nil
 }
 
-func parseRecord(record []string, col map[string]int, row int) (model.Task, error) {
+func parseRecord(record []string, col map[string]int, customCols []customColumn, row int) (model.Task, error) {
 	get := func(key string) string {
 		if idx, ok := col[key]; ok && idx < len(record) {
 			return strings.TrimSpace(record[idx])
@@ -135,14 +163,16 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 		return ""
 	}
 
+	customValues := makeCustomValues(record, customCols)
 	name := get("name")
 	statusStr := get("status")
 	if strings.HasPrefix(name, "#") {
 		return model.Task{
-			Name:      strings.TrimSpace(strings.TrimPrefix(name, "#")),
-			IsHeading: true,
-			Status:    statusStr,
-			Notes:     get("notes"),
+			Name:         strings.TrimSpace(strings.TrimPrefix(name, "#")),
+			IsHeading:    true,
+			Status:       statusStr,
+			Notes:        get("notes"),
+			CustomValues: customValues,
 		}, nil
 	}
 	startStr := get("start")
@@ -156,7 +186,7 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 
 	// Name only (no scheduling/depends/actual) -> display-only row (notes allowed).
 	if name != "" && startStr == "" && endStr == "" && durationStr == "" && dependsStr == "" && actualStartStr == "" && actualEndStr == "" && actualDurationStr == "" {
-		return model.Task{Name: name, DisplayOnly: true, Notes: notesStr}, nil
+		return model.Task{Name: name, DisplayOnly: true, Notes: notesStr, CustomValues: customValues}, nil
 	}
 
 	if name == "" {
@@ -164,10 +194,11 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	}
 
 	task := model.Task{
-		Name:      name,
-		DependsOn: parseDepends(dependsStr),
-		Notes:     notesStr,
-		Status:    statusStr,
+		Name:         name,
+		DependsOn:    parseDepends(dependsStr),
+		Notes:        notesStr,
+		Status:       statusStr,
+		CustomValues: customValues,
 	}
 
 	if startStr != "" {
@@ -215,6 +246,30 @@ func parseRecord(record []string, col map[string]int, row int) (model.Task, erro
 	}
 
 	return task, nil
+}
+
+func makeCustomValues(record []string, customCols []customColumn) []string {
+	if len(customCols) == 0 {
+		return nil
+	}
+	values := make([]string, len(customCols))
+	for i, col := range customCols {
+		if col.Index < len(record) {
+			values[i] = strings.TrimSpace(record[col.Index])
+		}
+	}
+	return values
+}
+
+func customColumnNames(customCols []customColumn) []string {
+	if len(customCols) == 0 {
+		return nil
+	}
+	names := make([]string, len(customCols))
+	for i, col := range customCols {
+		names[i] = col.Name
+	}
+	return names
 }
 
 func parseDepends(raw string) []string {

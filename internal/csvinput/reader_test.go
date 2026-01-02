@@ -22,7 +22,7 @@ Design,,,4d,Planning,2024-06-11,2024-06-17,
 		t.Fatalf("write temp file: %v", err)
 	}
 
-	tasks, err := Read(path)
+	tasks, _, err := Read(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -59,7 +59,7 @@ CancelledTask,2024-06-03,,1d,,cancelled
 		t.Fatalf("write temp file: %v", err)
 	}
 
-	tasks, err := Read(path)
+	tasks, _, err := Read(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -85,7 +85,7 @@ A,2024-06-04,,1d,
 		t.Fatalf("write temp file: %v", err)
 	}
 
-	_, err := Read(path)
+	_, _, err := Read(path)
 	if err == nil || !strings.Contains(err.Error(), "duplicate task name") {
 		t.Fatalf("expected duplicate name error, got %v", err)
 	}
@@ -104,7 +104,7 @@ func TestReadDetectsShiftJIS(t *testing.T) {
 		t.Fatalf("write temp file: %v", err)
 	}
 
-	tasks, err := Read(path)
+	tasks, _, err := Read(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -126,7 +126,7 @@ SlashDate,2024/06/03,,3d,
 		t.Fatalf("write temp file: %v", err)
 	}
 
-	tasks, err := Read(path)
+	tasks, _, err := Read(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -149,7 +149,7 @@ SlashNonPadded,2024/6/3,,1d,
 		t.Fatalf("write temp file: %v", err)
 	}
 
-	tasks, err := Read(path)
+	tasks, _, err := Read(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -174,7 +174,7 @@ Filled,2024-06-03,,1d,
 		t.Fatalf("write temp file: %v", err)
 	}
 
-	tasks, err := Read(path)
+	tasks, _, err := Read(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -183,5 +183,30 @@ Filled,2024-06-03,,1d,
 	}
 	if tasks[0].Name != "Filled" {
 		t.Fatalf("unexpected task name: %s", tasks[0].Name)
+	}
+}
+
+func TestReadCapturesCustomColumns(t *testing.T) {
+	content := `name,start,end,duration,depends_on,担当,priority
+Task,2024-06-03,,1d,,Alice,High
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "custom.csv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	tasks, customCols, err := Read(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(customCols) != 2 || customCols[0] != "担当" || customCols[1] != "priority" {
+		t.Fatalf("unexpected custom columns: %#v", customCols)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(tasks))
+	}
+	if len(tasks[0].CustomValues) != 2 || tasks[0].CustomValues[0] != "Alice" || tasks[0].CustomValues[1] != "High" {
+		t.Fatalf("unexpected custom values: %#v", tasks[0].CustomValues)
 	}
 }

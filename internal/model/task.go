@@ -12,6 +12,7 @@ type Task struct {
 	DisplayOnly         bool
 	Notes               string
 	Status              string
+	CustomValues        []string
 	Start               *time.Time
 	End                 *time.Time
 	DurationDays        int

@@ -42,6 +42,7 @@ func baseCSS() string {
   --name-col-width: 200px;
   --note-col-width: 240px;
   --status-col-width: 90px;
+  --custom-col-width: 140px;
   --heading-row-height: var(--row-height);
 }
 
@@ -107,6 +108,10 @@ body {
   grid-template-columns: var(--name-col-width) var(--status-col-width) 1fr var(--note-col-width);
   gap: 12px;
   align-items: flex-start;
+}
+
+.has-custom .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) repeat(var(--custom-col-count), var(--custom-col-width)) 1fr var(--note-col-width);
 }
 
 .name-list {
@@ -206,6 +211,62 @@ body {
 }
 
 .status.row-cancelled {
+  background: #eef0f3;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+.custom-columns {
+  display: flex;
+  gap: 12px;
+}
+
+.custom-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  padding: 12px 0 16px 0;
+  min-width: var(--custom-col-width);
+}
+
+.custom {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-weight: 500;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  height: var(--row-height);
+  display: flex;
+  align-items: center;
+  color: #374151;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom.header {
+  background: linear-gradient(120deg, #fff, #f0f4ff);
+  height: var(--timeline-header-height);
+  align-items: flex-end;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.custom.heading-row {
+  background: linear-gradient(120deg, #fff, #f7f7ff);
+  font-weight: 700;
+  color: #0f172a;
+  height: var(--heading-row-height);
+}
+
+.custom.empty {
+  color: transparent;
+}
+
+.custom.row-cancelled {
   background: #eef0f3;
   color: #6b7280;
   border-color: #d1d5db;
@@ -417,6 +478,10 @@ body {
   grid-template-columns: var(--name-col-width) var(--status-col-width) 1fr;
 }
 
+.notes-hidden.has-custom .gantt {
+  grid-template-columns: var(--name-col-width) var(--status-col-width) repeat(var(--custom-col-count), var(--custom-col-width)) 1fr;
+}
+
 .row-name, .row-bar {
   min-height: var(--row-height);
   transition: min-height 0.2s ease;
@@ -436,7 +501,7 @@ const pageTemplate = `<!DOCTYPE html>
   <title>Gantt Chart</title>
   <style>{{.CSS}}</style>
 </head>
-<body>
+<body{{if .HasCustomColumns}} class="has-custom"{{end}}>
   <div class="page">
     <h1>Gantt Chart</h1>
     <div class="legend-row">
@@ -446,7 +511,7 @@ const pageTemplate = `<!DOCTYPE html>
       </div>
       {{if .HasNotes}}<button id="toggle-notes" class="toggle-notes" type="button">備考を隠す</button>{{end}}
     </div>
-    <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};">
+    <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};--custom-col-count:{{.CustomColumnCount}};">
       <div class="name-list">
         <div class="name header">Task</div>
         {{range $i, $row := .Rows}}
@@ -479,6 +544,23 @@ const pageTemplate = `<!DOCTYPE html>
           {{end}}
         {{end}}
       </div>
+      {{if .HasCustomColumns}}
+      <div class="custom-columns">
+        {{range $colIndex, $colName := .CustomColumns}}
+        <div class="custom-list">
+          <div class="custom header">{{$colName}}</div>
+          {{range $i, $row := $.Rows}}
+            {{$value := index $row.CustomValues $colIndex}}
+            {{if $value}}
+              <div class="custom custom-cell{{if $row.Heading}} heading-row{{end}}{{if $row.Task}}{{if $row.Task.Cancelled}} row-cancelled{{end}}{{end}}" data-row="{{$i}}">{{$value}}</div>
+            {{else}}
+              <div class="custom empty custom-cell{{if $row.Heading}} heading-row{{end}}{{if $row.Task}}{{if $row.Task.Cancelled}} row-cancelled{{end}}{{end}}" data-row="{{$i}}"></div>
+            {{end}}
+          {{end}}
+        </div>
+        {{end}}
+      </div>
+      {{end}}
       <div class="timeline-wrapper">
         <div class="timeline-header-wrap">
           <div class="timeline-header-scroll">
@@ -597,6 +679,7 @@ const pageTemplate = `<!DOCTYPE html>
         var name = document.querySelector('.row-name[data-row="' + rowId + '"]');
         var status = document.querySelector('.status[data-row="' + rowId + '"]');
         var bar = document.querySelector('.row-bar[data-row="' + rowId + '"]');
+        var customCells = document.querySelectorAll('.custom-cell[data-row="' + rowId + '"]');
         var expanded = false;
 
         var applyHeight = function(h) {
@@ -605,6 +688,11 @@ const pageTemplate = `<!DOCTYPE html>
           if (name) name.style.minHeight = hp;
           if (status) status.style.minHeight = hp;
           if (bar) bar.style.minHeight = hp;
+          if (customCells.length) {
+            customCells.forEach(function(cell) {
+              cell.style.minHeight = hp;
+            });
+          }
         };
 
         var collapse = function() {

@@ -95,6 +95,8 @@ ganttgen --livereload [-o output.html] [--holidays holidays.yaml] <input.csv>
 | actual_duration(実績期間) | Nd |  | 実績期間（稼働日ベース。actual_start とセットで使用） |
 | notes(備考) | string |  | タスク備考（ガントチャート上に表示） |
 
+上記以外の列はカスタム列として扱い、HTML の左側に追加列として表示します。
+
 サンプル CSV のように日本語ヘッダも使用できます（英語ヘッダと同義）。
 
 CSV サンプル:

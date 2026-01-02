@@ -11,7 +11,7 @@ import (
 
 // BuildHTML prepares render data and returns the final HTML string.
 // liveReloadURL, when non-empty, injects a small client to auto-refresh the page.
-func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
+func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string) (string, error) {
 	if len(tasks) == 0 {
 		return "", errors.New("no tasks to render")
 	}
@@ -68,19 +68,21 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 	var rows []renderRow
 	var hasActual bool
 	var hasNotes bool
+	customCount := len(customColumns)
 	for _, t := range tasks {
+		customValues := padCustomValues(t.CustomValues, customCount)
 		if t.IsHeading {
 			if t.Notes != "" {
 				hasNotes = true
 			}
-			rows = append(rows, renderRow{Heading: t.Name, HeadingStatus: t.Status, HeadingNotes: t.Notes})
+			rows = append(rows, renderRow{Heading: t.Name, HeadingStatus: t.Status, HeadingNotes: t.Notes, CustomValues: customValues})
 			continue
 		}
 		if t.DisplayOnly {
 			if t.Notes != "" {
 				hasNotes = true
 			}
-			rows = append(rows, renderRow{DisplayOnly: t.Name, DisplayOnlyNotes: t.Notes})
+			rows = append(rows, renderRow{DisplayOnly: t.Name, DisplayOnlyNotes: t.Notes, CustomValues: customValues})
 			continue
 		}
 		startIdx := daysBetween(minStart, t.ComputedStart)
@@ -109,18 +111,21 @@ func BuildHTML(tasks []model.Task, liveReloadURL string) (string, error) {
 		if t.Notes != "" {
 			hasNotes = true
 		}
-		rows = append(rows, renderRow{Task: &rt})
+		rows = append(rows, renderRow{Task: &rt, CustomValues: customValues})
 	}
 
 	ctx := renderContext{
-		Days:          days,
-		Rows:          rows,
-		DayCount:      len(days),
-		TodayIndex:    todayIndex,
-		HasActual:     hasActual,
-		HasNotes:      hasNotes,
-		LiveReloadURL: liveReloadURL,
-		CSS:           template.CSS(baseCSS()),
+		Days:              days,
+		Rows:              rows,
+		DayCount:          len(days),
+		TodayIndex:        todayIndex,
+		HasActual:         hasActual,
+		HasNotes:          hasNotes,
+		HasCustomColumns:  customCount > 0,
+		CustomColumns:     customColumns,
+		CustomColumnCount: customCount,
+		LiveReloadURL:     liveReloadURL,
+		CSS:               template.CSS(baseCSS()),
 	}
 	return renderHTML(ctx)
 }
@@ -139,6 +144,18 @@ func daysBetween(start, end time.Time) int {
 		days++
 	}
 	return days
+}
+
+func padCustomValues(values []string, count int) []string {
+	if count == 0 {
+		return nil
+	}
+	if len(values) >= count {
+		return values[:count]
+	}
+	padded := make([]string, count)
+	copy(padded, values)
+	return padded
 }
 
 type renderTask struct {
@@ -160,6 +177,7 @@ type renderRow struct {
 	DisplayOnly      string
 	DisplayOnlyNotes string
 	Task             *renderTask
+	CustomValues     []string
 }
 
 type renderActual struct {
@@ -170,12 +188,15 @@ type renderActual struct {
 }
 
 type renderContext struct {
-	Days          []time.Time
-	Rows          []renderRow
-	DayCount      int
-	TodayIndex    int
-	HasActual     bool
-	HasNotes      bool
-	LiveReloadURL string
-	CSS           template.CSS
+	Days              []time.Time
+	Rows              []renderRow
+	DayCount          int
+	TodayIndex        int
+	HasActual         bool
+	HasNotes          bool
+	HasCustomColumns  bool
+	CustomColumns     []string
+	CustomColumnCount int
+	LiveReloadURL     string
+	CSS               template.CSS
 }

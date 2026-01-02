@@ -100,7 +100,7 @@ func generate(input, output, holidaysPath string, allWorkdays bool, liveReloadUR
 		}
 	}
 
-	tasks, err := csvinput.Read(input)
+	tasks, customColumns, err := csvinput.Read(input)
 	if err != nil {
 		return fmt.Errorf("error reading CSV: %w", err)
 	}
@@ -110,7 +110,7 @@ func generate(input, output, holidaysPath string, allWorkdays bool, liveReloadUR
 		return fmt.Errorf("error scheduling tasks: %w", err)
 	}
 
-	html, err := renderer.BuildHTML(scheduled, liveReloadURL)
+	html, err := renderer.BuildHTML(scheduled, liveReloadURL, customColumns)
 	if err != nil {
 		return fmt.Errorf("error rendering HTML: %w", err)
 	}
