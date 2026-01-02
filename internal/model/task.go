@@ -51,3 +51,9 @@ func (t Task) IsCancelled() bool {
 	status := strings.TrimSpace(strings.ToLower(t.Status))
 	return status == "cancelled" || status == "中止"
 }
+
+// IsCompleted reports whether the task is marked as completed by status.
+func (t Task) IsCompleted() bool {
+	status := strings.TrimSpace(strings.ToLower(t.Status))
+	return status == "completed" || status == "完了"
+}

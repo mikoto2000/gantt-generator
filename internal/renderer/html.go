@@ -657,7 +657,7 @@ const pageTemplate = `<!DOCTYPE html>
         <div class="name header" data-filter-key="name">Task</div>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
-            <div class="heading row-name" data-row="{{$i}}" data-heading="true" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.Heading}}</div>
+            <div class="heading row-name{{if $row.HeadingMuted}} row-cancelled{{end}}" data-row="{{$i}}" data-heading="true" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.Heading}}</div>
           {{else if $row.DisplayOnly}}
             <div class="name row-name" data-row="{{$i}}" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.DisplayOnly}}</div>
           {{else if $row.Task}}
@@ -670,9 +670,9 @@ const pageTemplate = `<!DOCTYPE html>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
             {{if $row.HeadingStatus}}
-              <div class="status heading-row" data-row="{{$i}}">{{$row.HeadingStatus}}</div>
+              <div class="status heading-row{{if $row.HeadingMuted}} row-cancelled{{end}}" data-row="{{$i}}">{{$row.HeadingStatus}}</div>
             {{else}}
-              <div class="status heading-row" data-row="{{$i}}">&nbsp;</div>
+              <div class="status heading-row{{if $row.HeadingMuted}} row-cancelled{{end}}" data-row="{{$i}}">&nbsp;</div>
             {{end}}
           {{else if $row.DisplayOnly}}
             <div class="status empty" data-row="{{$i}}"></div>
@@ -693,9 +693,9 @@ const pageTemplate = `<!DOCTYPE html>
           {{range $i, $row := $.Rows}}
             {{$value := index $row.CustomValues $colIndex}}
             {{if $value}}
-              <div class="custom custom-cell{{if $row.Heading}} heading-row{{end}}{{if $row.Task}}{{if $row.Task.Cancelled}} row-cancelled{{end}}{{end}}" data-row="{{$i}}">{{$value}}</div>
+              <div class="custom custom-cell{{if $row.Heading}} heading-row{{if $row.HeadingMuted}} row-cancelled{{end}}{{end}}{{if $row.Task}}{{if $row.Task.Cancelled}} row-cancelled{{end}}{{end}}" data-row="{{$i}}">{{$value}}</div>
             {{else}}
-              <div class="custom empty custom-cell{{if $row.Heading}} heading-row{{end}}{{if $row.Task}}{{if $row.Task.Cancelled}} row-cancelled{{end}}{{end}}" data-row="{{$i}}"></div>
+              <div class="custom empty custom-cell{{if $row.Heading}} heading-row{{if $row.HeadingMuted}} row-cancelled{{end}}{{end}}{{if $row.Task}}{{if $row.Task.Cancelled}} row-cancelled{{end}}{{end}}" data-row="{{$i}}"></div>
             {{end}}
           {{end}}
         </div>
@@ -720,7 +720,7 @@ const pageTemplate = `<!DOCTYPE html>
             <div class="bars">
               {{range $i, $row := .Rows}}
                 {{if $row.Heading}}
-                  <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
+                  <div class="heading-spacer row-bar{{if $row.HeadingMuted}} row-cancelled{{end}}" data-row="{{$i}}"></div>
                 {{else if $row.DisplayOnly}}
                   <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
               {{else if $row.Task}}
@@ -742,9 +742,9 @@ const pageTemplate = `<!DOCTYPE html>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
             {{if $row.HeadingNotes}}
-              <div class="note row-note" data-row="{{$i}}">{{$row.HeadingNotes}}</div>
+              <div class="note row-note{{if $row.HeadingMuted}} row-cancelled{{end}}" data-row="{{$i}}">{{$row.HeadingNotes}}</div>
             {{else}}
-              <div class="note empty row-note" data-row="{{$i}}"></div>
+              <div class="note empty row-note{{if $row.HeadingMuted}} row-cancelled{{end}}" data-row="{{$i}}"></div>
             {{end}}
           {{else if $row.DisplayOnly}}
             {{if $row.DisplayOnlyNotes}}

@@ -81,6 +81,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string)
 				Heading:       t.Name,
 				HeadingStatus: t.Status,
 				HeadingNotes:  t.Notes,
+				HeadingMuted:  t.IsCancelled() || t.IsCompleted(),
 				CustomValues:  customValues,
 				FilterName:    t.Name,
 				FilterStatus:  t.Status,
@@ -108,7 +109,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string)
 			Name:       t.Name,
 			Status:     t.Status,
 			Notes:      t.Notes,
-			Cancelled:  t.IsCancelled(),
+			Cancelled:  t.IsCancelled() || t.IsCompleted(),
 			StartIndex: startIdx,
 			Span:       span,
 			Start:      calendar.DateOnly(t.ComputedStart),
@@ -258,6 +259,7 @@ type renderRow struct {
 	Heading          string
 	HeadingStatus    string
 	HeadingNotes     string
+	HeadingMuted     bool
 	DisplayOnly      string
 	DisplayOnlyNotes string
 	Task             *renderTask
