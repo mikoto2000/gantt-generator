@@ -222,6 +222,20 @@ body {
   z-index: 4;
 }
 
+.filter-active {
+  position: relative;
+}
+
+.filter-active::after {
+  content: '•';
+  color: var(--actual);
+  font-size: 20px;
+  line-height: 1;
+  position: absolute;
+  top: 6px;
+  right: 8px;
+}
+
 .status-list {
   display: flex;
   flex-direction: column;
@@ -640,7 +654,7 @@ const pageTemplate = `<!DOCTYPE html>
     {{end}}
     <div class="gantt" style="--day-count:{{.DayCount}};--today-index:{{.TodayIndex}};--custom-col-count:{{.CustomColumnCount}};--custom-col-count-visible:{{.CustomColumnCount}};">
       <div class="name-list">
-        <div class="name header">Task</div>
+        <div class="name header" data-filter-key="name">Task</div>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
             <div class="heading row-name" data-row="{{$i}}" data-heading="true" data-name="{{$row.FilterName}}" data-status="{{$row.FilterStatus}}" data-notes="{{$row.FilterNotes}}"{{range $ci, $cname := $.CustomColumns}} data-custom-{{$ci}}="{{index $row.CustomValues $ci}}"{{end}}>{{$row.Heading}}</div>
@@ -652,7 +666,7 @@ const pageTemplate = `<!DOCTYPE html>
         {{end}}
       </div>
       <div class="status-list">
-        <div class="status header">状態</div>
+        <div class="status header" data-filter-key="status">状態</div>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
             {{if $row.HeadingStatus}}
@@ -675,7 +689,7 @@ const pageTemplate = `<!DOCTYPE html>
       <div class="custom-columns">
         {{range $colIndex, $colName := .CustomColumns}}
         <div class="custom-list" data-col="{{$colIndex}}">
-          <div class="custom header">{{$colName}}</div>
+          <div class="custom header" data-filter-key="custom-{{$colIndex}}">{{$colName}}</div>
           {{range $i, $row := $.Rows}}
             {{$value := index $row.CustomValues $colIndex}}
             {{if $value}}
@@ -724,7 +738,7 @@ const pageTemplate = `<!DOCTYPE html>
       </div>
       {{if .HasNotes}}
       <div class="notes-list">
-        <div class="note header">備考</div>
+        <div class="note header" data-filter-key="notes">備考</div>
         {{range $i, $row := .Rows}}
           {{if $row.Heading}}
             {{if $row.HeadingNotes}}
@@ -908,7 +922,7 @@ const pageTemplate = `<!DOCTYPE html>
               selected[cb.value] = true;
             }
           });
-          states.push({ key: key, text: text, selected: selected, anySelected: anySelected });
+          states.push({ key: key, text: text, selected: selected, anySelected: anySelected, active: anySelected || text !== '' });
         });
         return states;
       };
@@ -943,6 +957,19 @@ const pageTemplate = `<!DOCTYPE html>
       var applyFilters = function() {
         var states = readFilters();
         var matches = [];
+        var activeKeys = {};
+        states.forEach(function(st) {
+          if (st.active) activeKeys[st.key] = true;
+        });
+        var headerEls = document.querySelectorAll('[data-filter-key]');
+        headerEls.forEach(function(el) {
+          var key = el.getAttribute('data-filter-key');
+          if (activeKeys[key]) {
+            el.classList.add('filter-active');
+          } else {
+            el.classList.remove('filter-active');
+          }
+        });
         rowNames.forEach(function(rowEl, idx) {
           matches[idx] = rowMatches(rowEl, states);
         });
