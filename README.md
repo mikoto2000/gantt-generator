@@ -2,7 +2,7 @@
 
 CSV から、ガントチャートの単一 HTML を生成する Go 製 CLI です。
 
-<img width="1057" height="844" alt="image" src="https://github.com/user-attachments/assets/f82307a5-cd29-4b24-ab81-ba3c6c5298aa" />
+<img width="1391" height="1130" alt="image" src="https://github.com/user-attachments/assets/760d1ddc-d09b-4759-8d76-51da8340d390" />
 
 [ガントチャート作成ツールを作った - 003 備考が書けるようになりました](https://youtube.com/shorts/iGupb_EMSDc)
 
