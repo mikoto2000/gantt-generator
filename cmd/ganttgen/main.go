@@ -24,7 +24,7 @@ const sampleCSVHeader = "タスク名,状態,開始,終了,期間,依存,実績�
 func main() {
 	var output string
 	var holidaysPath string
-	var holidaysAsWorkdays bool
+	var allWorkdays bool
 	var templateCSVPath string
 	var watch bool
 	var liveReload bool
@@ -33,7 +33,7 @@ func main() {
 	flag.StringVar(&output, "o", "", "output HTML file (default: gantt.html in the input CSV directory)")
 	flag.StringVar(&output, "output", "", "output HTML file (default: gantt.html in the input CSV directory)")
 	flag.StringVar(&holidaysPath, "holidays", "", "optional YAML file listing YYYY-MM-DD holidays")
-	flag.BoolVar(&holidaysAsWorkdays, "holidays-as-workdays", false, "treat holidays as workdays even if --holidays is provided")
+	flag.BoolVar(&allWorkdays, "all-workdays", false, "treat weekends and holidays as workdays")
 	flag.StringVar(&templateCSVPath, "gen-template", "", "output an empty CSV template and exit")
 	flag.BoolVar(&watch, "watch", false, "watch input CSV and regenerate on changes")
 	flag.BoolVar(&liveReload, "livereload", false, "enable livereload server and inject client script")
@@ -55,7 +55,7 @@ func main() {
 		return
 	}
 	if len(args) != 1 {
-		fmt.Fprintf(os.Stderr, "Usage: ganttgen [--output file] [--holidays file] [--holidays-as-workdays] [--gen-template file] [--watch] [--livereload] [--livereload-port port] [--version] <input.csv>\n")
+		fmt.Fprintf(os.Stderr, "Usage: ganttgen [--output file] [--holidays file] [--all-workdays] [--gen-template file] [--watch] [--livereload] [--livereload-port port] [--version] <input.csv>\n")
 		os.Exit(1)
 	}
 	input := args[0]
@@ -75,7 +75,7 @@ func main() {
 		watch = true // livereload implies watch for change events
 	}
 
-	if err := generate(input, output, holidaysPath, holidaysAsWorkdays, liveReloadURL); err != nil {
+	if err := generate(input, output, holidaysPath, allWorkdays, liveReloadURL); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
@@ -83,15 +83,16 @@ func main() {
 	fmt.Printf("generated %s\n", output)
 
 	if watch {
-		if err := watchAndGenerate(input, output, holidaysPath, holidaysAsWorkdays, liveReloadURL, lr); err != nil {
+		if err := watchAndGenerate(input, output, holidaysPath, allWorkdays, liveReloadURL, lr); err != nil {
 			fmt.Fprintf(os.Stderr, "watch error: %v\n", err)
 			os.Exit(1)
 		}
 	}
 }
 
-func generate(input, output, holidaysPath string, holidaysAsWorkdays bool, liveReloadURL string) error {
-	if holidaysAsWorkdays {
+func generate(input, output, holidaysPath string, allWorkdays bool, liveReloadURL string) error {
+	calendar.SetAllWorkdays(allWorkdays)
+	if allWorkdays {
 		calendar.SetHolidays(nil)
 	} else if holidaysPath != "" {
 		if err := calendar.LoadHolidaysYAML(holidaysPath); err != nil {
@@ -120,7 +121,7 @@ func generate(input, output, holidaysPath string, holidaysAsWorkdays bool, liveR
 	return nil
 }
 
-func watchAndGenerate(input, output, holidaysPath string, holidaysAsWorkdays bool, liveReloadURL string, lr *liveReloader) error {
+func watchAndGenerate(input, output, holidaysPath string, allWorkdays bool, liveReloadURL string, lr *liveReloader) error {
 	info, err := os.Stat(input)
 	if err != nil {
 		return fmt.Errorf("stat input: %w", err)
@@ -153,7 +154,7 @@ func watchAndGenerate(input, output, holidaysPath string, holidaysAsWorkdays boo
 			lastSize = info.Size()
 
 			fmt.Printf("[%s] change detected, regenerating...\n", time.Now().Format("15:04:05"))
-			if err := generate(input, output, holidaysPath, holidaysAsWorkdays, liveReloadURL); err != nil {
+			if err := generate(input, output, holidaysPath, allWorkdays, liveReloadURL); err != nil {
 				fmt.Fprintf(os.Stderr, "regenerate failed: %v\n", err)
 				continue
 			}

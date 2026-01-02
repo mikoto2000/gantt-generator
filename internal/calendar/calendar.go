@@ -8,6 +8,8 @@ import (
 var (
 	holidaysMu sync.RWMutex
 	holidays   = map[time.Time]struct{}{}
+	// allWorkdays treats weekends and holidays as workdays when true.
+	allWorkdays bool
 )
 
 // SetHolidays registers dates that should be treated as non-workdays.
@@ -22,9 +24,19 @@ func SetHolidays(dates []time.Time) {
 	}
 }
 
+// SetAllWorkdays controls whether weekends and holidays are treated as workdays.
+func SetAllWorkdays(enabled bool) {
+	holidaysMu.Lock()
+	defer holidaysMu.Unlock()
+	allWorkdays = enabled
+}
+
 func isHoliday(t time.Time) bool {
 	holidaysMu.RLock()
 	defer holidaysMu.RUnlock()
+	if allWorkdays {
+		return false
+	}
 	_, ok := holidays[DateOnly(t)]
 	return ok
 }
@@ -32,6 +44,9 @@ func isHoliday(t time.Time) bool {
 // IsWorkday reports whether the given date falls on a weekday (Mon-Fri).
 func IsWorkday(t time.Time) bool {
 	day := DateOnly(t)
+	if allWorkdays {
+		return true
+	}
 	if isHoliday(day) {
 		return false
 	}

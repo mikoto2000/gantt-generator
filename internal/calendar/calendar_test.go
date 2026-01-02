@@ -13,6 +13,7 @@ func mustDate(t *testing.T, y int, m time.Month, d int) time.Time {
 
 func TestIsWorkday(t *testing.T) {
 	t.Cleanup(func() { SetHolidays(nil) })
+	t.Cleanup(func() { SetAllWorkdays(false) })
 
 	if !IsWorkday(mustDate(t, 2024, time.June, 3)) { // Monday
 		t.Fatalf("expected Monday to be workday")
@@ -25,12 +26,27 @@ func TestIsWorkday(t *testing.T) {
 func TestIsWorkday_Holiday(t *testing.T) {
 	SetHolidays([]time.Time{mustDate(t, 2024, time.July, 15)}) // Monday but holiday
 	t.Cleanup(func() { SetHolidays(nil) })
+	t.Cleanup(func() { SetAllWorkdays(false) })
 
 	if IsWorkday(mustDate(t, 2024, time.July, 15)) {
 		t.Fatalf("expected configured holiday to be non-workday")
 	}
 	if !IsWorkday(mustDate(t, 2024, time.July, 16)) {
 		t.Fatalf("expected next weekday to remain workday")
+	}
+}
+
+func TestIsWorkday_AllWorkdays(t *testing.T) {
+	SetHolidays([]time.Time{mustDate(t, 2024, time.July, 15)})
+	SetAllWorkdays(true)
+	t.Cleanup(func() { SetHolidays(nil) })
+	t.Cleanup(func() { SetAllWorkdays(false) })
+
+	if !IsWorkday(mustDate(t, 2024, time.July, 15)) {
+		t.Fatalf("expected configured holiday to be workday when overridden")
+	}
+	if !IsWorkday(mustDate(t, 2024, time.June, 1)) { // Saturday
+		t.Fatalf("expected weekend to be workday when overridden")
 	}
 }
 
