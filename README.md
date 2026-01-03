@@ -1,3 +1,5 @@
+**日本語** / [English](README_en.md)
+
 # ganttgen
 
 CSV から、ガントチャートの単一 HTML を生成する Go 製 CLI です。
