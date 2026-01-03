@@ -1138,7 +1138,7 @@ const pageTemplate = `<!DOCTYPE html>
         }
       });
 
-      var toggleGroup = function(headingEl) {
+      var setGroupHidden = function(headingEl, hidden) {
         var startId = headingEl.getAttribute('data-row');
         var startIndex = rowIdToIndex[startId];
         if (startIndex == null) return;
@@ -1154,21 +1154,34 @@ const pageTemplate = `<!DOCTYPE html>
           }
         }
 
-        var isHidden = headingEl.getAttribute('data-group-hidden') === 'true';
-        var nextHidden = !isHidden;
-        headingEl.setAttribute('data-group-hidden', nextHidden ? 'true' : 'false');
+        headingEl.setAttribute('data-group-hidden', hidden ? 'true' : 'false');
 
         for (var idx = startIndex + 1; idx < endIndex; idx++) {
           var rowId = rowNames[idx].getAttribute('data-row');
           var rowEls = document.querySelectorAll('[data-row="' + rowId + '"]');
           rowEls.forEach(function(el) {
-            if (nextHidden) {
+            if (hidden) {
               el.classList.add('group-hidden');
             } else {
               el.classList.remove('group-hidden');
             }
           });
         }
+      };
+
+      var toggleGroup = function(headingEl) {
+        var isHidden = headingEl.getAttribute('data-group-hidden') === 'true';
+        setGroupHidden(headingEl, !isHidden);
+      };
+
+      var toggleAllGroups = function() {
+        var allHidden = headingRows.every(function(headingEl) {
+          return headingEl.getAttribute('data-group-hidden') === 'true';
+        });
+        var nextHidden = !allHidden;
+        headingRows.forEach(function(headingEl) {
+          setGroupHidden(headingEl, nextHidden);
+        });
       };
 
       headingRows.forEach(function(headingEl) {
@@ -1178,6 +1191,15 @@ const pageTemplate = `<!DOCTYPE html>
           toggleGroup(headingEl);
         });
       });
+
+      var taskHeader = document.querySelector('.name.header');
+      if (taskHeader) {
+        taskHeader.style.cursor = 'pointer';
+        taskHeader.title = 'クリックで全グループの表示/非表示を切替';
+        taskHeader.addEventListener('click', function() {
+          toggleAllGroups();
+        });
+      }
     })();
   </script>
 </body>
