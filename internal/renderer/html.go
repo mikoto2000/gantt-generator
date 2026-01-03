@@ -451,6 +451,7 @@ body {
   flex-direction: column;
   gap: var(--row-gap);
   max-width: 100%;
+  min-width: 0;
 }
 
 .grid-surface {
@@ -474,6 +475,36 @@ body {
 .timeline-body-scroll {
   overflow-x: auto;
   overflow-y: visible;
+  max-width: 100%;
+}
+
+.timeline-header-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.timeline-header-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.timeline-body-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.timeline-body-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.timeline-scrollbar {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}
+
+.timeline-scrollbar-spacer {
+  height: 14px;
+  min-width: calc(var(--day-count) * var(--cell-width) + 24px);
 }
 
 .timeline-header-surface {
@@ -843,6 +874,9 @@ const pageTemplate = `<!DOCTYPE html>
             </div>
           </div>
         </div>
+        <div class="timeline-scrollbar">
+          <div class="timeline-scrollbar-spacer"></div>
+        </div>
       </div>
       {{if .HasNotes}}
       <div class="notes-list">
@@ -907,6 +941,7 @@ const pageTemplate = `<!DOCTYPE html>
 
       var headerScroll = document.querySelector('.timeline-header-scroll');
       var bodyScroll = document.querySelector('.timeline-body-scroll');
+      var bottomScroll = document.querySelector('.timeline-scrollbar');
       if (headerScroll && bodyScroll) {
         var syncing = false;
         var syncTo = function(source, target) {
@@ -915,8 +950,20 @@ const pageTemplate = `<!DOCTYPE html>
           target.scrollLeft = source.scrollLeft;
           syncing = false;
         };
-        headerScroll.addEventListener('scroll', function() { syncTo(headerScroll, bodyScroll); });
-        bodyScroll.addEventListener('scroll', function() { syncTo(bodyScroll, headerScroll); });
+        headerScroll.addEventListener('scroll', function() {
+          syncTo(headerScroll, bodyScroll);
+          if (bottomScroll) syncTo(headerScroll, bottomScroll);
+        });
+        bodyScroll.addEventListener('scroll', function() {
+          syncTo(bodyScroll, headerScroll);
+          if (bottomScroll) syncTo(bodyScroll, bottomScroll);
+        });
+        if (bottomScroll) {
+          bottomScroll.addEventListener('scroll', function() {
+            syncTo(bottomScroll, headerScroll);
+            syncTo(bottomScroll, bodyScroll);
+          });
+        }
       }
 
       var rowHeight = getComputedStyle(document.documentElement).getPropertyValue('--row-height').trim();
