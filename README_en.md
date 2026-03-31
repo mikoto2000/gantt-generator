@@ -14,7 +14,7 @@ Go CLI that generates a single HTML Gantt chart from CSV.
 - Output is a single HTML file. No extra server or resources needed
 - Show both planned and actual schedules
 - Workdays are Mon-Fri and tasks are auto-rescheduled based on dependencies
-- Optional YAML holiday list is supported
+- Optional YAML holiday list or Cabinet Office `syukujitsu.csv` is supported
 - Watch mode for auto-regeneration on CSV updates
 - Built-in Livereload server for automatic browser refresh
 
@@ -33,7 +33,7 @@ go install github.com/mikoto2000/ganttgen@latest
 ```sh
 Usage of ./dist/ganttgen:
   -holidays string
-        optional YAML file listing YYYY-MM-DD holidays
+        optional holidays file (YAML or syukujitsu.csv)
   -all-workdays
         treat weekends and holidays as workdays
   -gen-template string
@@ -54,7 +54,7 @@ Usage of ./dist/ganttgen:
 
 Run `ganttgen <input.csv>` to generate an HTML Gantt chart from a CSV file.
 
-By default, the output is `gantt.html` in the same directory as the input CSV. You can change the output with `-o`/`--output`. With `--holidays`, pass a YAML file that contains a list of YYYY-MM-DD holidays; those dates are treated as non-working days.
+By default, the output is `gantt.html` in the same directory as the input CSV. You can change the output with `-o`/`--output`. With `--holidays`, pass either a YAML file that contains a list of YYYY-MM-DD holidays or the Cabinet Office `syukujitsu.csv`; those dates are treated as non-working days.
 Add `--all-workdays` to treat weekends and holidays as working days.
 Add `--gen-template` to output an empty CSV template with the same header as `sample/sample.csv`, then exit.
 
@@ -67,10 +67,10 @@ With `--livereload`, a local SSE-based livereload server is started and a client
 
 ```sh
 # Generate while watching for changes
-ganttgen --watch [-o output.html] [--holidays holidays.yaml] <input.csv>
+ganttgen --watch [-o output.html] [--holidays holidays.yaml|syukujitsu.csv] <input.csv>
 
 # Generate with livereload (auto refresh while HTML is open)
-ganttgen --livereload [-o output.html] [--holidays holidays.yaml] <input.csv>
+ganttgen --livereload [-o output.html] [--holidays holidays.yaml|syukujitsu.csv] <input.csv>
 ```
 
 
@@ -126,6 +126,14 @@ holidays:
   - 2025-01-08
   - 2025-02-11
   # ...
+```
+
+### Cabinet Office `syukujitsu.csv`
+
+You can also pass the `syukujitsu.csv` published on the Cabinet Office holiday page directly to `--holidays`. Shift_JIS input is supported as-is.
+
+```bash
+ganttgen --holidays syukujitsu.csv sample/sample.csv
 ```
 
 

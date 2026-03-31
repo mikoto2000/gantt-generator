@@ -32,7 +32,7 @@ func main() {
 	var showVersion bool
 	flag.StringVar(&output, "o", "", "output HTML file (default: gantt.html in the input CSV directory)")
 	flag.StringVar(&output, "output", "", "output HTML file (default: gantt.html in the input CSV directory)")
-	flag.StringVar(&holidaysPath, "holidays", "", "optional YAML file listing YYYY-MM-DD holidays")
+	flag.StringVar(&holidaysPath, "holidays", "", "optional holidays file (YAML or syukujitsu.csv)")
 	flag.BoolVar(&allWorkdays, "all-workdays", false, "treat weekends and holidays as workdays")
 	flag.StringVar(&templateCSVPath, "gen-template", "", "output an empty CSV template and exit")
 	flag.BoolVar(&watch, "watch", false, "watch input CSV and regenerate on changes")
@@ -95,7 +95,7 @@ func generate(input, output, holidaysPath string, allWorkdays bool, liveReloadUR
 	if allWorkdays {
 		calendar.SetHolidays(nil)
 	} else if holidaysPath != "" {
-		if err := calendar.LoadHolidaysYAML(holidaysPath); err != nil {
+		if err := calendar.LoadHolidaysFile(holidaysPath); err != nil {
 			return fmt.Errorf("failed to load holidays: %w", err)
 		}
 	}

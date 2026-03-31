@@ -1,9 +1,13 @@
 package calendar
 
 import (
+	"bytes"
 	"os"
 	"testing"
 	"time"
+
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 )
 
 func mustDate(t *testing.T, y int, m time.Month, d int) time.Time {
@@ -94,6 +98,36 @@ holidays:
 
 	if IsWorkday(mustDate(t, 2024, time.September, 16)) {
 		t.Fatalf("expected holiday from YAML to be non-workday")
+	}
+	if !IsWorkday(mustDate(t, 2024, time.September, 17)) {
+		t.Fatalf("expected adjacent weekday to be workday")
+	}
+}
+
+func TestLoadHolidaysCSV(t *testing.T) {
+	t.Cleanup(func() { SetHolidays(nil) })
+
+	dir := t.TempDir()
+	path := dir + "/syukujitsu.csv"
+	var encoded bytes.Buffer
+	writer := transform.NewWriter(&encoded, japanese.ShiftJIS.NewEncoder())
+	content := "国民の祝日・休日月日,国民の祝日・休日名称\n2024/9/16,敬老の日\n2024/9/23,秋分の日\n"
+	if _, err := writer.Write([]byte(content)); err != nil {
+		t.Fatalf("encode temp csv: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close temp csv encoder: %v", err)
+	}
+	if err := os.WriteFile(path, encoded.Bytes(), 0o644); err != nil {
+		t.Fatalf("write temp csv: %v", err)
+	}
+
+	if err := LoadHolidaysCSV(path); err != nil {
+		t.Fatalf("load holidays csv: %v", err)
+	}
+
+	if IsWorkday(mustDate(t, 2024, time.September, 16)) {
+		t.Fatalf("expected holiday from CSV to be non-workday")
 	}
 	if !IsWorkday(mustDate(t, 2024, time.September, 17)) {
 		t.Fatalf("expected adjacent weekday to be workday")

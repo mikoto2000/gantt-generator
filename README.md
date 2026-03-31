@@ -14,7 +14,7 @@ CSV から、ガントチャートの単一 HTML を生成する Go 製 CLI で�
 - 単一 HTML ファイルに完結。追加のサーバやリソース不要
 - 予定と実績の両方を表示可能
 - 稼働日は月〜金とし、依存関係に応じてタスクを自動リスケジューリング
-- 任意で yaml 形式の祝日リストを渡すことも可能
+- 任意で YAML 形式の祝日リスト、または内閣府 `syukujitsu.csv` を渡すことも可能
 - 変更監視モードで、CSV 更新時に自動再生成
 - Livereload サーバを内蔵し、ブラウザで自動更新も可能
 
@@ -33,7 +33,7 @@ go install github.com/mikoto2000/ganttgen@latest
 ```sh
 Usage of ./dist/ganttgen:
   -holidays string
-        optional YAML file listing YYYY-MM-DD holidays
+        optional holidays file (YAML or syukujitsu.csv)
   -all-workdays
         treat weekends and holidays as workdays
   -gen-template string
@@ -54,7 +54,7 @@ Usage of ./dist/ganttgen:
 
 `ganttgen <input.csv>` で CSV からガントチャート HTML を生成します。
 
-デフォルト出力は入力 CSV と同じディレクトリの `gantt.html` です。`-o`/`--output` で出力先を変更できます。`--holidays` で YYYY-MM-DD の配列を持つ yaml を渡すと、その日付を非稼働日として扱います。
+デフォルト出力は入力 CSV と同じディレクトリの `gantt.html` です。`-o`/`--output` で出力先を変更できます。`--holidays` には YYYY-MM-DD の配列を持つ YAML、または内閣府公開の `syukujitsu.csv` を渡せます。読み込んだ日付は非稼働日として扱います。
 `--all-workdays` を付けると、週末や `--holidays` で指定した祝日も稼働日として扱います。
 `--gen-template` を付けると、`sample/sample.csv` と同じヘッダを持つ空の CSV テンプレートを出力して終了します。
 
@@ -67,10 +67,10 @@ Usage of ./dist/ganttgen:
 
 ```sh
 # 変更監視しながら生成
-ganttgen --watch [-o output.html] [--holidays holidays.yaml] <input.csv>
+ganttgen --watch [-o output.html] [--holidays holidays.yaml|syukujitsu.csv] <input.csv>
 
 # Livereload 付きで監視生成（HTML を開いたまま自動更新）
-ganttgen --livereload [-o output.html] [--holidays holidays.yaml] <input.csv>
+ganttgen --livereload [-o output.html] [--holidays holidays.yaml|syukujitsu.csv] <input.csv>
 ```
 
 
@@ -126,6 +126,14 @@ holidays:
   - 2025-01-08
   - 2025-02-11
   # ...
+```
+
+### 内閣府 `syukujitsu.csv`
+
+内閣府「国民の祝日について」で公開されている `syukujitsu.csv` も、そのまま `--holidays` に指定できます。Shift_JIS のまま読み込みます。
+
+```bash
+ganttgen --holidays syukujitsu.csv sample/sample.csv
 ```
 
 
