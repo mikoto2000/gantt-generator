@@ -53,6 +53,7 @@ Usage of ./dist/ganttgen:
 ```
 
 Run `ganttgen <input.csv>` to generate an HTML Gantt chart from a CSV file.
+Running `ganttgen` without arguments is equivalent to `ganttgen -all-workdays -livereload .\gantt.csv`.
 
 By default, the output is `gantt.html` in the same directory as the input CSV. You can change the output with `-o`/`--output`. With `--holidays`, pass either a YAML file that contains a list of YYYY-MM-DD holidays or the Cabinet Office `syukujitsu.csv`; those dates are treated as non-working days.
 Add `--all-workdays` to treat weekends and holidays as working days.

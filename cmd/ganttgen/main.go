@@ -54,6 +54,11 @@ func main() {
 		fmt.Printf("generated %s\n", templateCSVPath)
 		return
 	}
+	if len(args) == 0 && len(os.Args) == 1 {
+		args = []string{".\\gantt.csv"}
+		allWorkdays = true
+		liveReload = true
+	}
 	if len(args) != 1 {
 		fmt.Fprintf(os.Stderr, "Usage: ganttgen [--output file] [--holidays file] [--all-workdays] [--gen-template file] [--watch] [--livereload] [--livereload-port port] [--version] <input.csv>\n")
 		os.Exit(1)

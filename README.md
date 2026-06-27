@@ -53,6 +53,7 @@ Usage of ./dist/ganttgen:
 ```
 
 `ganttgen <input.csv>` で CSV からガントチャート HTML を生成します。
+引数無しの `ganttgen` は `ganttgen -all-workdays -livereload .\gantt.csv` と同じ条件で起動します。
 
 デフォルト出力は入力 CSV と同じディレクトリの `gantt.html` です。`-o`/`--output` で出力先を変更できます。`--holidays` には YYYY-MM-DD の配列を持つ YAML、または内閣府公開の `syukujitsu.csv` を渡せます。読み込んだ日付は非稼働日として扱います。
 `--all-workdays` を付けると、週末や `--holidays` で指定した祝日も稼働日として扱います。
