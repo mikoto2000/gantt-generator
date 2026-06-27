@@ -142,7 +142,7 @@ ganttgen --holidays syukujitsu.csv sample/sample.csv
 - `end` cannot be specified alone / cannot be combined with `duration`
 - `actual_end` cannot be specified alone / cannot be combined with `actual_duration` / `actual_duration` cannot be used alone
 - `name` must be unique
-- `depends_on` cannot reference unknown tasks
+- `depends_on` may reference unknown tasks; tasks without a resolvable start are shown without a planned bar
 - Circular dependencies are not allowed
 - A row with all empty fields is an error
 

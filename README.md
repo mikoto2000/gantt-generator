@@ -142,7 +142,7 @@ ganttgen --holidays syukujitsu.csv sample/sample.csv
 - end 単独指定不可 / end と duration 併用不可
 - actual_end 単独指定不可 / actual_end と actual_duration 併用不可 / actual_duration のみ指定不可
 - name 重複不可
-- 存在しないタスクへの depends_on 禁止
+- 存在しないタスクへの depends_on は許可（開始日を解決できない場合は予定バーなしで表示）
 - 循環依存禁止
 - 全フィールド空はエラー
 

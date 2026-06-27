@@ -864,7 +864,9 @@ const pageTemplate = `<!DOCTYPE html>
                   <div class="heading-spacer row-bar" data-row="{{$i}}"></div>
               {{else if $row.Task}}
                 <div class="bar-row grid row-bar{{if $row.Task.Cancelled}} row-cancelled{{end}}" data-row="{{$i}}">
+                  {{if $row.Task.HasSchedule}}
                   <div class="bar plan{{if $row.Task.HasProgress}} progress{{end}}{{if isOneDay $row.Task.Span}} one-day{{end}}" style="grid-column:{{add1 $row.Task.StartIndex}} / span {{$row.Task.Span}};{{if $row.Task.HasProgress}}--progress:{{$row.Task.ProgressPercent}};{{end}}" title="予定: {{formatDate $row.Task.Start}} - {{formatDate $row.Task.End}}{{if $row.Task.HasProgress}} (進捗 {{$row.Task.ProgressText}}){{end}}">予定</div>
+                  {{end}}
                   {{if $row.Task.Actual}}
                     <div class="bar actual{{if isOneDay $row.Task.Actual.Span}} one-day{{end}}" style="grid-column:{{add1 $row.Task.Actual.StartIndex}} / span {{$row.Task.Actual.Span}};" title="実績: {{formatDate $row.Task.Actual.Start}} - {{formatDate $row.Task.Actual.End}}">実績</div>
                   {{end}}

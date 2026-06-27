@@ -91,6 +91,28 @@ A,2024-06-04,,1d,
 	}
 }
 
+func TestReadAllowsUnknownDependency(t *testing.T) {
+	content := `name,start,end,duration,depends_on
+Blocked,,,2d,MissingTask
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "unknown_dep.csv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	tasks, _, _, err := Read(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(tasks))
+	}
+	if got := tasks[0].DependsOn; len(got) != 1 || got[0] != "MissingTask" {
+		t.Fatalf("unexpected depends_on: %#v", got)
+	}
+}
+
 func TestReadDetectsShiftJIS(t *testing.T) {
 	content := "タスク名,開始,終了,期間,依存\n計画,2024-06-03,,2d,\n"
 	encoded, _, err := transform.String(japanese.ShiftJIS.NewEncoder(), content)

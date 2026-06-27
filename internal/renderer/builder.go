@@ -24,8 +24,9 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string,
 		maxEnd   time.Time
 		setRange bool
 	)
+	today := calendar.DateOnly(time.Now())
 	for _, t := range tasks {
-		if t.IsHeading || t.DisplayOnly {
+		if t.IsHeading || t.DisplayOnly || t.Unscheduled {
 			continue
 		}
 		if !setRange {
@@ -41,7 +42,8 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string,
 		}
 	}
 	if !setRange {
-		return "", errors.New("no schedulable tasks to render")
+		minStart, maxEnd = today, today
+		setRange = true
 	}
 	for _, t := range tasks {
 		if t.IsHeading || t.DisplayOnly {
@@ -57,7 +59,6 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string,
 		}
 	}
 
-	today := calendar.DateOnly(time.Now())
 	if today.Before(minStart) {
 		minStart = today
 	}
@@ -106,8 +107,12 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string,
 			})
 			continue
 		}
-		startIdx := daysBetween(minStart, t.ComputedStart)
-		span := daysBetween(t.ComputedStart, t.ComputedEnd) + 1
+		startIdx := 0
+		span := 0
+		if !t.Unscheduled {
+			startIdx = daysBetween(minStart, t.ComputedStart)
+			span = daysBetween(t.ComputedStart, t.ComputedEnd) + 1
+		}
 		progressText := ""
 		hasProgress := false
 		progressPercent := 0
@@ -121,6 +126,7 @@ func BuildHTML(tasks []model.Task, liveReloadURL string, customColumns []string,
 			Status:          t.Status,
 			Notes:           t.Notes,
 			Cancelled:       t.IsCancelled() || t.IsCompleted(),
+			HasSchedule:     !t.Unscheduled,
 			HasProgress:     hasProgress,
 			ProgressPercent: progressPercent,
 			ProgressText:    progressText,
@@ -279,6 +285,7 @@ type renderTask struct {
 	Status          string
 	Notes           string
 	Cancelled       bool
+	HasSchedule     bool
 	HasProgress     bool
 	ProgressPercent int
 	ProgressText    string

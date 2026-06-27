@@ -61,6 +61,42 @@ func TestScheduleDetectsCycle(t *testing.T) {
 	}
 }
 
+func TestScheduleAllowsUnknownDependencyAsUnscheduled(t *testing.T) {
+	tasks := []model.Task{
+		{Name: "Blocked", DurationDays: 2, DependsOn: []string{"Missing"}},
+	}
+
+	got, err := Schedule(tasks)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	blocked := findTask(t, got, "Blocked")
+	if !blocked.Unscheduled {
+		t.Fatalf("expected task with unknown dependency to be unscheduled")
+	}
+}
+
+func TestScheduleIgnoresUnknownDependencyWhenStartExists(t *testing.T) {
+	tasks := []model.Task{
+		{Name: "Started", Start: ptrTime(d(2024, time.June, 3)), DurationDays: 2, DependsOn: []string{"Missing"}},
+	}
+
+	got, err := Schedule(tasks)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	started := findTask(t, got, "Started")
+	if started.Unscheduled {
+		t.Fatalf("task with explicit start should be scheduled")
+	}
+	if !started.ComputedStart.Equal(d(2024, time.June, 3)) {
+		t.Fatalf("start mismatch: %v", started.ComputedStart)
+	}
+	if !started.ComputedEnd.Equal(d(2024, time.June, 4)) {
+		t.Fatalf("end mismatch: %v", started.ComputedEnd)
+	}
+}
+
 func ptrTime(t time.Time) *time.Time { return &t }
 
 func findTask(t *testing.T, tasks []model.Task, name string) model.Task {

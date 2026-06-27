@@ -25,6 +25,7 @@ type Task struct {
 	ComputedEnd         time.Time
 	ComputedActualStart *time.Time
 	ComputedActualEnd   *time.Time
+	Unscheduled         bool
 }
 
 // HasStart returns true when an absolute start date was provided.

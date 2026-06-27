@@ -19,7 +19,7 @@ func Schedule(tasks []model.Task) ([]model.Task, error) {
 	byName := make(map[string]model.Task, len(tasks))
 	for i := range tasks {
 		task := tasks[i]
-		if task.IsHeading {
+		if task.IsHeading || task.DisplayOnly {
 			continue
 		}
 		byName[task.Name] = task
@@ -33,8 +33,9 @@ func Schedule(tasks []model.Task) ([]model.Task, error) {
 			continue
 		}
 		schedulableCount++
-		indegree[t.Name] = len(t.DependsOn)
-		for _, dep := range t.DependsOn {
+		knownDeps := knownDependencies(t.DependsOn, byName)
+		indegree[t.Name] = len(knownDeps)
+		for _, dep := range knownDeps {
 			graph[dep] = append(graph[dep], t.Name)
 		}
 	}
@@ -111,23 +112,26 @@ func computeSchedule(task model.Task, scheduled map[string]model.Task) (model.Ta
 		)
 		for _, dep := range task.DependsOn {
 			depTask, ok := scheduled[dep]
-			if !ok {
-				return model.Task{}, fmt.Errorf("dependency %q for task %q not scheduled", dep, task.Name)
+			if !ok || depTask.Unscheduled {
+				continue
 			}
 			if !seen || depTask.ComputedEnd.After(latestEnd.Time) {
 				latestEnd = modelTaskDate{depTask.ComputedEnd}
 				seen = true
 			}
 		}
-		depStart := modelTaskDate{calendar.NextWorkdayAfter(latestEnd.Time)}
-		if !hasStart || depStart.After(start.Time) {
-			start = depStart
-			hasStart = true
+		if seen {
+			depStart := modelTaskDate{calendar.NextWorkdayAfter(latestEnd.Time)}
+			if !hasStart || depStart.After(start.Time) {
+				start = depStart
+				hasStart = true
+			}
 		}
 	}
 
 	if !hasStart {
-		return model.Task{}, fmt.Errorf("task %q lacks a resolvable start date", task.Name)
+		task.Unscheduled = true
+		return task, nil
 	}
 
 	var end modelTaskDate
@@ -145,6 +149,19 @@ func computeSchedule(task model.Task, scheduled map[string]model.Task) (model.Ta
 	task.ComputedStart = start.Time
 	task.ComputedEnd = end.Time
 	return task, nil
+}
+
+func knownDependencies(dependsOn []string, tasks map[string]model.Task) []string {
+	if len(dependsOn) == 0 {
+		return nil
+	}
+	deps := make([]string, 0, len(dependsOn))
+	for _, dep := range dependsOn {
+		if _, ok := tasks[dep]; ok {
+			deps = append(deps, dep)
+		}
+	}
+	return deps
 }
 
 type modelTaskDate struct {

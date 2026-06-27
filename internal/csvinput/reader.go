@@ -124,10 +124,6 @@ func Read(path string) ([]model.Task, []string, bool, error) {
 		row++
 	}
 
-	if err := validateDependencies(tasks); err != nil {
-		return nil, nil, false, err
-	}
-
 	return tasks, customColumnNames(customCols), hasProgressColumn, nil
 }
 
@@ -341,22 +337,6 @@ func parseProgress(raw string) (int, error) {
 		return 0, errors.New("progress must be between 0 and 100")
 	}
 	return value, nil
-}
-
-func validateDependencies(tasks []model.Task) error {
-	nameSet := make(map[string]struct{}, len(tasks))
-	for _, t := range tasks {
-		nameSet[t.Name] = struct{}{}
-	}
-
-	for _, t := range tasks {
-		for _, dep := range t.DependsOn {
-			if _, ok := nameSet[dep]; !ok {
-				return fmt.Errorf("task %q depends on unknown task %q", t.Name, dep)
-			}
-		}
-	}
-	return nil
 }
 
 func parseActual(task *model.Task, startStr, endStr, durationStr string, row int) error {

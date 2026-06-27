@@ -107,6 +107,26 @@ func TestBuildHTMLRendersProgressColumn(t *testing.T) {
 	}
 }
 
+func TestBuildHTMLRendersUnscheduledTaskWithoutPlanBar(t *testing.T) {
+	tasks := []model.Task{
+		{
+			Name:        "Blocked",
+			Unscheduled: true,
+		},
+	}
+
+	html, err := BuildHTML(tasks, "", nil, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(html, "Blocked") {
+		t.Fatalf("task name not rendered")
+	}
+	if strings.Contains(html, `class="bar plan`) {
+		t.Fatalf("unscheduled task should not render planned bar")
+	}
+}
+
 func day(y int, m time.Month, d int) time.Time {
 	return time.Date(y, m, d, 0, 0, 0, 0, time.Local)
 }
