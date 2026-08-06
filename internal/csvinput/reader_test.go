@@ -113,6 +113,53 @@ Blocked,,,2d,MissingTask
 	}
 }
 
+func TestReadIgnoresExtraFields(t *testing.T) {
+	content := `name,start,end,duration,depends_on
+Task,2024-06-03,,1d,,ignored,also ignored
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "extra_fields.csv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	tasks, _, _, err := Read(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(tasks))
+	}
+	if tasks[0].Name != "Task" || tasks[0].DurationDays != 1 {
+		t.Fatalf("unexpected task: %#v", tasks[0])
+	}
+}
+
+func TestReadTreatsMissingFieldsAsEmpty(t *testing.T) {
+	content := `name,start,end,duration,depends_on,notes
+Task,2024-06-03,,1d
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "missing_fields.csv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	tasks, _, _, err := Read(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(tasks))
+	}
+	if tasks[0].Notes != "" {
+		t.Fatalf("expected missing notes to be empty, got %q", tasks[0].Notes)
+	}
+	if len(tasks[0].DependsOn) != 0 {
+		t.Fatalf("expected missing dependency to be empty, got %#v", tasks[0].DependsOn)
+	}
+}
+
 func TestReadDetectsShiftJIS(t *testing.T) {
 	content := "タスク名,開始,終了,期間,依存\n計画,2024-06-03,,2d,\n"
 	encoded, _, err := transform.String(japanese.ShiftJIS.NewEncoder(), content)

@@ -76,6 +76,7 @@ func Read(path string) ([]model.Task, []string, bool, error) {
 	}
 
 	reader := csv.NewReader(bytes.NewReader(decoded))
+	reader.FieldsPerRecord = -1
 	header, err := reader.Read()
 	if err != nil {
 		return nil, nil, false, fmt.Errorf("read header: %w", err)
@@ -96,9 +97,6 @@ func Read(path string) ([]model.Task, []string, bool, error) {
 			break
 		}
 		if err != nil {
-			if errors.Is(err, csv.ErrFieldCount) {
-				return nil, nil, false, fmt.Errorf("row %d: inconsistent field count", row)
-			}
 			return nil, nil, false, fmt.Errorf("row %d: %w", row, err)
 		}
 

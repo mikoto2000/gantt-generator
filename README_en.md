@@ -84,6 +84,7 @@ Header is required. Column order does not matter. Dates accept `YYYY-MM-DD` / `Y
 Rows starting with `#` in the first column are treated as section headings, and the section name is displayed in the chart.
 
 Encoding is auto-detected from the header line: UTF-8 or Shift_JIS.
+Rows may have more or fewer fields than the header. Extra fields are ignored, and missing fields are treated as empty strings.
 
 | Column (JP label) | Type | Required | Description |
 | --- | --- | --- | --- |
