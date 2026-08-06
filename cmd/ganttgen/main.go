@@ -81,11 +81,14 @@ func main() {
 	}
 
 	if err := generate(input, output, holidaysPath, allWorkdays, liveReloadURL); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		if !liveReload {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "initial generate failed: %v\n", err)
+	} else {
+		fmt.Printf("generated %s\n", output)
 	}
-
-	fmt.Printf("generated %s\n", output)
 
 	if watch {
 		if err := watchAndGenerate(input, output, holidaysPath, allWorkdays, liveReloadURL, lr); err != nil {
@@ -128,11 +131,14 @@ func generate(input, output, holidaysPath string, allWorkdays bool, liveReloadUR
 
 func watchAndGenerate(input, output, holidaysPath string, allWorkdays bool, liveReloadURL string, lr *liveReloader) error {
 	info, err := os.Stat(input)
+	var lastMod time.Time
+	var lastSize int64
 	if err != nil {
-		return fmt.Errorf("stat input: %w", err)
+		fmt.Fprintf(os.Stderr, "watch: initial stat failed: %v\n", err)
+	} else {
+		lastMod = info.ModTime()
+		lastSize = info.Size()
 	}
-	lastMod := info.ModTime()
-	lastSize := info.Size()
 
 	fmt.Printf("watching %s for changes (Ctrl+C to stop)...\n", input)
 
